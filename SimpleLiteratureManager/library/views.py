@@ -1,12 +1,15 @@
+from collections import defaultdict
+from difflib import SequenceMatcher
+from itertools import combinations
+import re
+
+import requests
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.html import strip_tags
-from django.db.models.functions import Lower
-from collections import defaultdict
-from itertools import combinations
+
 from .forms import AuthorForm, DoiImportForm, JournalForm, PublicationForm
 from .models import Author, Journal, Publication
-import requests
 
 def author_list(request):
     authors = Author.objects.all()
@@ -26,24 +29,71 @@ def author_detail(request, pk):
 
 
 def author_duplicates(request):
-    authors = Author.objects.annotate(
-        first_lower=Lower("first_name"), last_lower=Lower("last_name")
-    )
+    authors = list(Author.objects.all())
+
+    def normalize_name(value):
+        return re.sub(r"[^a-z]", "", (value or "").lower())
+
+    def is_abbreviation_match(left, right):
+        left_norm, right_norm = normalize_name(left), normalize_name(right)
+        if not left_norm or not right_norm or left_norm[0] != right_norm[0]:
+            return False
+
+        short, long = (
+            (left_norm, right_norm) if len(left_norm) <= len(right_norm) else (right_norm, left_norm)
+        )
+        return len(short) == 1 or long.startswith(short) or (len(short) <= 3 and long.startswith(short))
+
+    def is_similar_enough(left, right, threshold=0.85):
+        left_norm, right_norm = normalize_name(left), normalize_name(right)
+        if not left_norm or not right_norm:
+            return False
+        if left_norm == right_norm:
+            return True
+        return SequenceMatcher(None, left_norm, right_norm).ratio() >= threshold
+
+    def is_first_name_match(left, right):
+        return is_abbreviation_match(left, right) or is_similar_enough(left, right, threshold=0.8)
+
+    def is_last_name_match(left, right):
+        return is_similar_enough(left, right, threshold=0.85)
+
+    def is_potential_duplicate(first_author, second_author):
+        return is_last_name_match(first_author.last_name, second_author.last_name) and is_first_name_match(
+            first_author.first_name, second_author.first_name
+        )
+
+    parent = {author.id: author.id for author in authors}
+
+    def find(author_id):
+        while parent[author_id] != author_id:
+            parent[author_id] = parent[parent[author_id]]
+            author_id = parent[author_id]
+        return author_id
+
+    def union(first_id, second_id):
+        root_first, root_second = find(first_id), find(second_id)
+        if root_first != root_second:
+            parent[root_second] = root_first
+
+    for author_a, author_b in combinations(authors, 2):
+        if is_potential_duplicate(author_a, author_b):
+            union(author_a.id, author_b.id)
 
     grouped_authors = defaultdict(list)
     for author in authors:
-        key = (author.first_lower, author.last_lower)
-        grouped_authors[key].append(author)
+        grouped_authors[find(author.id)].append(author)
 
     duplicate_groups = []
-    for key, author_list in grouped_authors.items():
+    for author_list in grouped_authors.values():
         if len(author_list) < 2:
             continue
 
-        sorted_authors = sorted(author_list, key=lambda a: a.last_name.lower())
+        sorted_authors = sorted(author_list, key=lambda a: (a.last_name.lower(), a.first_name.lower()))
+        representative = sorted_authors[0]
         duplicate_groups.append(
             {
-                "key": key,
+                "key": (representative.first_name, representative.last_name),
                 "authors": sorted_authors,
                 "pairs": list(combinations(sorted_authors, 2)),
             }
