@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="mb-3">Mögliche doppelte Autoren</h1>
+<p class="text-muted">Autoren mit identischem Vor- und Nachnamen werden hier als mögliche Duplikate angezeigt.</p>
+
+{% if duplicate_groups %}
+    {% for group in duplicate_groups %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>{{ group.key.1|default_if_none:"" }}, {{ group.key.0|default_if_none:"" }} ({{ group.authors|length }} Einträge)</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive mb-3">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nachname</th>
+                            <th>Vorname</th>
+                            <th>ORCID</th>
+                            <th>Universität</th>
+                            <th>Abteilung</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for author in group.authors %}
+                        <tr>
+                            <td>{{ author.id }}</td>
+                            <td><a href="{% url 'author_detail' author.id %}">{{ author.last_name }}</a></td>
+                            <td><a href="{% url 'author_detail' author.id %}">{{ author.first_name }}</a></td>
+                            <td>{{ author.orcid|default_if_none:"" }}</td>
+                            <td>{{ author.university|default_if_none:"" }}</td>
+                            <td>{{ author.department|default_if_none:"" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <h6>Zusammenführen</h6>
+            <p class="text-muted">Wähle zwei Einträge, um deren Daten zu vergleichen und zusammenzuführen.</p>
+            <div class="d-flex flex-column gap-2">
+                {% for primary, duplicate in group.pairs %}
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="flex-grow-1">Behalte {{ primary.last_name }}, {{ primary.first_name }} und führe {{ duplicate.last_name }}, {{ duplicate.first_name }} zusammen.</span>
+                    <a class="btn btn-sm btn-primary" href="{% url 'author_merge' primary.id duplicate.id %}">Zusammenführen</a>
+                    <a class="btn btn-sm btn-outline-secondary" href="{% url 'author_merge' duplicate.id primary.id %}">Alternative Richtung</a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+<div class="alert alert-success">Es wurden keine möglichen Duplikate gefunden.</div>
+{% endif %}
+
+<a class="btn btn-secondary" href="{% url 'author_list' %}">Zurück zur Autorenliste</a>
+{% endblock %}

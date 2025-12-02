@@ -2,7 +2,10 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="mb-0">Autoren</h1>
-    <a class="btn btn-primary" href="{% url 'author_create' %}">Autor hinzufügen</a>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" href="{% url 'author_duplicates' %}">Duplikate verwalten</a>
+        <a class="btn btn-primary" href="{% url 'author_create' %}">Autor hinzufügen</a>
+    </div>
 </div>
 
 <div class="table-responsive">

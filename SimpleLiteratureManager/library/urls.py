@@ -3,6 +3,12 @@ from . import views
 
 urlpatterns = [
     path("authors/", views.author_list, name="author_list"),
+    path("authors/duplicates/", views.author_duplicates, name="author_duplicates"),
+    path(
+        "authors/merge/<int:primary_id>/<int:duplicate_id>/",
+        views.author_merge,
+        name="author_merge",
+    ),
     path("authors/<int:pk>/", views.author_detail, name="author_detail"),
     path("authors/add/", views.author_create, name="author_create"),
     path("authors/<int:pk>/edit/", views.author_update, name="author_update"),

@@ -1,6 +1,9 @@
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.html import strip_tags
+from django.db.models.functions import Lower
+from collections import defaultdict
+from itertools import combinations
 from .forms import AuthorForm, DoiImportForm, JournalForm, PublicationForm
 from .models import Author, Journal, Publication
 import requests
@@ -19,6 +22,39 @@ def author_detail(request, pk):
         request,
         "author_detail.html",
         {"author": author, "publications": publications},
+    )
+
+
+def author_duplicates(request):
+    authors = Author.objects.annotate(
+        first_lower=Lower("first_name"), last_lower=Lower("last_name")
+    )
+
+    grouped_authors = defaultdict(list)
+    for author in authors:
+        key = (author.first_lower, author.last_lower)
+        grouped_authors[key].append(author)
+
+    duplicate_groups = []
+    for key, author_list in grouped_authors.items():
+        if len(author_list) < 2:
+            continue
+
+        sorted_authors = sorted(author_list, key=lambda a: a.last_name.lower())
+        duplicate_groups.append(
+            {
+                "key": key,
+                "authors": sorted_authors,
+                "pairs": list(combinations(sorted_authors, 2)),
+            }
+        )
+
+    duplicate_groups.sort(key=lambda entry: (entry["key"][1], entry["key"][0]))
+
+    return render(
+        request,
+        "author_duplicates.html",
+        {"duplicate_groups": duplicate_groups},
     )
 
 
@@ -178,3 +214,81 @@ def author_delete(request, pk):
         author.delete()
         return redirect("author_list")
     return redirect("author_list")
+
+
+def author_merge(request, primary_id, duplicate_id):
+    author_primary = get_object_or_404(Author, pk=primary_id)
+    author_duplicate = get_object_or_404(Author, pk=duplicate_id)
+
+    if author_primary.id == author_duplicate.id:
+        return redirect("author_duplicates")
+
+    author_map = {"primary": author_primary, "duplicate": author_duplicate}
+
+    if request.method == "POST":
+        keep_choice = request.POST.get("keep", "primary")
+        target = author_map.get(keep_choice, author_primary)
+        other = author_duplicate if target is author_primary else author_primary
+
+        def resolve_value(field_name):
+            selected = request.POST.get(f"{field_name}_source", keep_choice)
+            source_author = author_map.get(selected, target)
+            return getattr(source_author, field_name)
+
+        target.first_name = resolve_value("first_name")
+        target.last_name = resolve_value("last_name")
+        target.orcid = resolve_value("orcid")
+        target.university = resolve_value("university")
+        target.department = resolve_value("department")
+        target.save()
+
+        publications = other.publications.all()
+        if publications.exists():
+            target.publications.add(*publications)
+
+        other.delete()
+
+        return redirect("author_detail", pk=target.pk)
+
+    merge_fields = [
+        {
+            "name": "first_name",
+            "label": "Vorname",
+            "primary_value": author_primary.first_name,
+            "duplicate_value": author_duplicate.first_name,
+        },
+        {
+            "name": "last_name",
+            "label": "Nachname",
+            "primary_value": author_primary.last_name,
+            "duplicate_value": author_duplicate.last_name,
+        },
+        {
+            "name": "orcid",
+            "label": "ORCID",
+            "primary_value": author_primary.orcid,
+            "duplicate_value": author_duplicate.orcid,
+        },
+        {
+            "name": "university",
+            "label": "Universität",
+            "primary_value": author_primary.university,
+            "duplicate_value": author_duplicate.university,
+        },
+        {
+            "name": "department",
+            "label": "Abteilung",
+            "primary_value": author_primary.department,
+            "duplicate_value": author_duplicate.department,
+        },
+    ]
+
+    return render(
+        request,
+        "author_merge.html",
+        {
+            "author_primary": author_primary,
+            "author_duplicate": author_duplicate,
+            "merge_fields": merge_fields,
+        },
+    )

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="mb-3">Autoren zusammenführen</h1>
+<p class="text-muted">Wähle, welche Daten übernommen werden sollen. Der ausgewählte Datensatz bleibt erhalten, der andere wird gelöscht.</p>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="keep" id="keep-primary" value="primary" checked>
+                        <label class="form-check-label" for="keep-primary">
+                            Behalte Autor {{ author_primary.last_name }}, {{ author_primary.first_name }} (ID {{ author_primary.id }})
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="keep" id="keep-duplicate" value="duplicate">
+                        <label class="form-check-label" for="keep-duplicate">
+                            Behalte Autor {{ author_duplicate.last_name }}, {{ author_duplicate.first_name }} (ID {{ author_duplicate.id }})
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Feld</th>
+                            <th>{{ author_primary.last_name }}, {{ author_primary.first_name }}</th>
+                            <th>{{ author_duplicate.last_name }}, {{ author_duplicate.first_name }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for field in merge_fields %}
+                        <tr>
+                            <td class="fw-bold">{{ field.label }}</td>
+                            <td>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="{{ field.name }}_source" id="{{ field.name }}-primary" value="primary" checked>
+                                    <label class="form-check-label" for="{{ field.name }}-primary">{{ field.primary_value|default_if_none:"" }}</label>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="{{ field.name }}_source" id="{{ field.name }}-duplicate" value="duplicate">
+                                    <label class="form-check-label" for="{{ field.name }}-duplicate">{{ field.duplicate_value|default_if_none:"" }}</label>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex gap-2">
+                <a class="btn btn-outline-secondary" href="{% url 'author_duplicates' %}">Zurück</a>
+                <button type="submit" class="btn btn-primary">Zusammenführen</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
