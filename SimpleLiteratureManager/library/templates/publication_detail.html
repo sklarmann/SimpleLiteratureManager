@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="mb-0">{{ publication.title }}</h1>
+        <p class="mb-0 text-muted">Publikationsdetails</p>
+    </div>
+    <a class="btn btn-primary" href="{% url 'publication_update' publication.id %}">Bearbeiten</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Jahr</dt>
+            <dd class="col-sm-9">{{ publication.year }}</dd>
+
+            <dt class="col-sm-3">Journal</dt>
+            <dd class="col-sm-9">{{ publication.journal|default_if_none:"-" }}</dd>
+
+            <dt class="col-sm-3">Autoren</dt>
+            <dd class="col-sm-9">
+                {% if publication.authors.all|length %}
+                    {{ publication.authors.all|join:", " }}
+                {% else %}
+                    -
+                {% endif %}
+            </dd>
+
+            <dt class="col-sm-3">DOI</dt>
+            <dd class="col-sm-9">{{ publication.doi|default_if_none:"-" }}</dd>
+
+            <dt class="col-sm-3">Abstract</dt>
+            <dd class="col-sm-9">{{ publication.abstract|default_if_none:"-" }}</dd>
+        </dl>
+
+        {% if publication.pdf %}
+            <a href="{{ publication.pdf.url }}" class="btn btn-outline-primary mt-3" target="_blank" rel="noopener">PDF öffnen</a>
+        {% endif %}
+    </div>
+</div>
+
+<a class="btn btn-secondary" href="{% url 'publication_list' %}">Zurück zur Liste</a>
+{% endblock %}

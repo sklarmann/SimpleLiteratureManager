@@ -136,7 +136,32 @@ def publication_create(request):
             return redirect("publication_list")
     else:
         form = PublicationForm()
-    return render(request, "publication_form.html", {"form": form})
+    return render(request, "publication_form.html", {"form": form, "is_edit": False})
+
+
+def publication_detail(request, pk):
+    publication = get_object_or_404(
+        Publication.objects.select_related("journal").prefetch_related("authors"),
+        pk=pk,
+    )
+    return render(request, "publication_detail.html", {"publication": publication})
+
+
+def publication_update(request, pk):
+    publication = get_object_or_404(Publication, pk=pk)
+    if request.method == "POST":
+        form = PublicationForm(request.POST, request.FILES, instance=publication)
+        if form.is_valid():
+            form.save()
+            return redirect("publication_detail", pk=publication.pk)
+    else:
+        form = PublicationForm(instance=publication)
+
+    return render(
+        request,
+        "publication_form.html",
+        {"form": form, "publication": publication, "is_edit": True},
+    )
 
 
 def _extract_year(message):

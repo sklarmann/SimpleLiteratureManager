@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1>Publikation hinzufügen</h1>
+<h1>{% if is_edit %}Publikation bearbeiten{% else %}Publikation hinzufügen{% endif %}</h1>
 
 <form method="POST" enctype="multipart/form-data" class="mt-3">
     {% csrf_token %}
@@ -62,8 +62,12 @@
         {% endfor %}
     </div>
 
-    <button class="btn btn-primary" type="submit">Speichern</button>
-    <a class="btn btn-secondary" href="/publications/">Abbrechen</a>
+    <button class="btn btn-primary" type="submit">{% if is_edit %}Aktualisieren{% else %}Speichern{% endif %}</button>
+    {% if is_edit %}
+        <a class="btn btn-secondary" href="{% url 'publication_detail' publication.id %}">Abbrechen</a>
+    {% else %}
+        <a class="btn btn-secondary" href="{% url 'publication_list' %}">Abbrechen</a>
+    {% endif %}
 </form>
 
 {% endblock %}

@@ -3,14 +3,14 @@
 <h1>Publikationen</h1>
 
 <div class="mb-3">
-    <a href="/publications/add/" class="btn btn-primary me-2">Publikation hinzufügen</a>
-    <a href="/publications/add-doi/" class="btn btn-outline-primary">Per DOI hinzufügen</a>
+    <a href="{% url 'publication_create' %}" class="btn btn-primary me-2">Publikation hinzufügen</a>
+    <a href="{% url 'publication_add_by_doi' %}" class="btn btn-outline-primary">Per DOI hinzufügen</a>
 </div>
 
 <ul class="list-group">
     {% for p in publications %}
     <li class="list-group-item">
-        <strong>{{ p.title }}</strong> ({{ p.year }})<br>
+        <strong><a href="{% url 'publication_detail' p.id %}">{{ p.title }}</a></strong> ({{ p.year }})<br>
         Autoren: {{ p.authors.all|join:", " }}<br>
         Journal: {{ p.journal }}<br>
         {% if p.doi %}DOI: {{ p.doi }}<br>{% endif %}
