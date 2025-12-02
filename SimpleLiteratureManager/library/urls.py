@@ -8,4 +8,6 @@ urlpatterns = [
     path("journals/", views.journal_list, name="journal_list"),
     path("journals/add/", views.journal_create, name="journal_create"),
     path("publications/", views.publication_list, name="publication_list"),
+    path("publications/add/", views.publication_create, name="publication_create"),
+    path("publications/add-doi/", views.publication_add_by_doi, name="publication_add_by_doi"),
 ]

@@ -2,6 +2,11 @@
 {% block content %}
 <h1>Publikationen</h1>
 
+<div class="mb-3">
+    <a href="/publications/add/" class="btn btn-primary me-2">Publikation hinzufügen</a>
+    <a href="/publications/add-doi/" class="btn btn-outline-primary">Per DOI hinzufügen</a>
+</div>
+
 <ul class="list-group">
     {% for p in publications %}
     <li class="list-group-item">
