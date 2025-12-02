@@ -26,10 +26,13 @@
                 <td>{{ a.university|default_if_none:"" }}</td>
                 <td>{{ a.department|default_if_none:"" }}</td>
                 <td>
-                    <form method="post" action="{% url 'author_delete' a.id %}">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-outline-danger btn-sm">Löschen</button>
-                    </form>
+                    <div class="d-flex gap-2">
+                        <a class="btn btn-outline-primary btn-sm" href="{% url 'author_update' a.id %}">Bearbeiten</a>
+                        <form method="post" action="{% url 'author_delete' a.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm">Löschen</button>
+                        </form>
+                    </div>
                 </td>
             </tr>
             {% endfor %}

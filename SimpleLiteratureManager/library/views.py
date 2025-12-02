@@ -136,7 +136,27 @@ def author_create(request):
             return redirect("author_list")
     else:
         form = AuthorForm()
-    return render(request, "author_form.html", {"form": form})
+    return render(request, "author_form.html", {"form": form, "is_edit": False})
+
+
+def author_update(request, pk):
+    author = get_object_or_404(Author, pk=pk)
+    if request.method == "POST":
+        form = AuthorForm(request.POST, instance=author)
+        if form.is_valid():
+            form.save()
+            return redirect("author_list")
+    else:
+        form = AuthorForm(instance=author)
+    return render(
+        request,
+        "author_form.html",
+        {
+            "form": form,
+            "author": author,
+            "is_edit": True,
+        },
+    )
 
 
 def author_delete(request, pk):
