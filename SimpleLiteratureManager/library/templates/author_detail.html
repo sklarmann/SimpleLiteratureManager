@@ -39,7 +39,13 @@
             <tr>
                 <td>{{ publication.title }}</td>
                 <td>{{ publication.year }}</td>
-                <td>{{ publication.journal.name if publication.journal else "-" }}</td>
+                <td>
+                    {% if publication.journal %}
+                        {{ publication.journal.name }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
