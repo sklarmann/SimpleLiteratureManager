@@ -26,6 +26,7 @@
                 <td>{{ a.university|default_if_none:"" }}</td>
                 <td>{{ a.department|default_if_none:"" }}</td>
                 <td>
+                    <a class="btn btn-outline-primary btn-sm mb-1" href="{% url 'author_detail' a.id %}">Anzeigen</a>
                     <form method="post" action="{% url 'author_delete' a.id %}">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-outline-danger btn-sm">Löschen</button>

@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Autorendetails</h1>
+    <a class="btn btn-secondary" href="{% url 'author_list' %}">Zurück zur Übersicht</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">{{ author.first_name }} {{ author.last_name }}</h5>
+        <p class="mb-1"><strong>Universität:</strong> {{ author.university|default:"-" }}</p>
+        <p class="mb-1"><strong>Abteilung:</strong> {{ author.department|default:"-" }}</p>
+        <p class="mb-0"><strong>ORCID:</strong> {{ author.orcid|default:"-" }}</p>
+    </div>
+</div>
+
+<h2>Publikationen</h2>
+{% if publications %}
+<ul class="list-group">
+    {% for publication in publications %}
+    <li class="list-group-item">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong>{{ publication.title }}</strong><br>
+                <small class="text-muted">{{ publication.year }}{% if publication.journal %} · {{ publication.journal.name }}{% endif %}</small>
+            </div>
+            {% if publication.doi %}
+            <span class="badge bg-primary">DOI</span>
+            {% endif %}
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>Keine Publikationen gefunden.</p>
+{% endif %}
+{% endblock %}

@@ -9,6 +9,21 @@ def author_list(request):
     authors = Author.objects.all()
     return render(request, "author_list.html", {"authors": authors})
 
+
+def author_detail(request, pk):
+    author = get_object_or_404(
+        Author.objects.prefetch_related(
+            "publications__journal",
+        ),
+        pk=pk,
+    )
+    publications = author.publications.all()
+    return render(
+        request,
+        "author_detail.html",
+        {"author": author, "publications": publications},
+    )
+
 def journal_list(request):
     journals = Journal.objects.all()
     return render(request, "journal_list.html", {"journals": journals})
