@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Journals</h1>
+    <a class="btn btn-primary" href="{% url 'journal_create' %}">Journal hinzufügen</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped sortable">
+        <thead>
+            <tr>
+                <th scope="col" data-sort="text">Name</th>
+                <th scope="col" data-sort="text">ISSN</th>
+                <th scope="col" data-sort="text">Verlag</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for j in journals %}
+            <tr>
+                <td>{{ j.name }}</td>
+                <td>{{ j.issn|default_if_none:"" }}</td>
+                <td>{{ j.publisher|default_if_none:"" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

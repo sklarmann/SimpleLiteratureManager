@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Literaturverwaltung</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <div class="container">
+        <a class="navbar-brand" href="/">Literaturverwaltung</a>
+        <div>
+            <a class="nav-link d-inline text-white" href="/authors/">Autoren</a>
+            <a class="nav-link d-inline text-white" href="/journals/">Journale</a>
+            <a class="nav-link d-inline text-white" href="/publications/">Publikationen</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    {% block content %}
+    {% endblock %}
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll("table.sortable").forEach((table) => {
+        const headers = table.querySelectorAll("th[data-sort]");
+        headers.forEach((header, index) => {
+            header.style.cursor = "pointer";
+            header.addEventListener("click", () => {
+                const type = header.dataset.sort;
+                const tbody = table.tBodies[0];
+                const rows = Array.from(tbody.querySelectorAll("tr"));
+                const currentDirection = header.dataset.direction === "asc" ? "asc" : "desc";
+                const newDirection = currentDirection === "asc" ? "desc" : "asc";
+
+                headers.forEach((h) => h.dataset.direction = "");
+                header.dataset.direction = newDirection;
+
+                rows.sort((a, b) => {
+                    const getValue = (row) => {
+                        const cell = row.children[index];
+                        const raw = cell.dataset.value ?? cell.textContent.trim();
+                        if (type === "number") {
+                            const num = parseFloat(raw);
+                            return isNaN(num) ? Number.NEGATIVE_INFINITY : num;
+                        }
+                        return raw.toLowerCase();
+                    };
+                    const valA = getValue(a);
+                    const valB = getValue(b);
+
+                    if (valA < valB) return newDirection === "asc" ? -1 : 1;
+                    if (valA > valB) return newDirection === "asc" ? 1 : -1;
+                    return 0;
+                });
+
+                rows.forEach((row) => tbody.appendChild(row));
+            });
+        });
+    });
+});
+</script>
+</body>
+</html>

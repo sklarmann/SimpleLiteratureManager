@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Autoren</h1>
+    <a class="btn btn-primary" href="{% url 'author_create' %}">Autor hinzufügen</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped sortable">
+        <thead>
+            <tr>
+                <th scope="col" data-sort="number">ID</th>
+                <th scope="col" data-sort="text">Nachname</th>
+                <th scope="col" data-sort="text">Vorname</th>
+                <th scope="col" data-sort="text">Universität</th>
+                <th scope="col" data-sort="text">Abteilung</th>
+                <th scope="col">Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in authors %}
+            <tr>
+                <td data-value="{{ a.id }}">{{ a.id }}</td>
+                <td>{{ a.last_name }}</td>
+                <td>{{ a.first_name }}</td>
+                <td>{{ a.university|default_if_none:"" }}</td>
+                <td>{{ a.department|default_if_none:"" }}</td>
+                <td>
+                    <form method="post" action="{% url 'author_delete' a.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger btn-sm">Löschen</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
