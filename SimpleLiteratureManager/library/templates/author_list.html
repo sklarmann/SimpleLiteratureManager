@@ -21,8 +21,8 @@
             {% for a in authors %}
             <tr>
                 <td data-value="{{ a.id }}">{{ a.id }}</td>
-                <td>{{ a.last_name }}</td>
-                <td>{{ a.first_name }}</td>
+                <td><a href="{% url 'author_detail' a.id %}">{{ a.last_name }}</a></td>
+                <td><a href="{% url 'author_detail' a.id %}">{{ a.first_name }}</a></td>
                 <td>{{ a.university|default_if_none:"" }}</td>
                 <td>{{ a.department|default_if_none:"" }}</td>
                 <td>

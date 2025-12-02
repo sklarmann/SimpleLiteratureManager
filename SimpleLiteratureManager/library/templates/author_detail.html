@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="mb-0">{{ author.first_name }} {{ author.last_name }}</h1>
+        <p class="mb-0 text-muted">Autorendetails</p>
+    </div>
+    <a class="btn btn-primary" href="{% url 'author_update' author.id %}">Bearbeiten</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">ORCID</dt>
+            <dd class="col-sm-9">{{ author.orcid|default_if_none:"-" }}</dd>
+
+            <dt class="col-sm-3">Universität</dt>
+            <dd class="col-sm-9">{{ author.university|default_if_none:"-" }}</dd>
+
+            <dt class="col-sm-3">Abteilung</dt>
+            <dd class="col-sm-9">{{ author.department|default_if_none:"-" }}</dd>
+        </dl>
+    </div>
+</div>
+
+<h2 class="h4">Publikationen</h2>
+{% if publications %}
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th scope="col">Titel</th>
+                <th scope="col">Jahr</th>
+                <th scope="col">Journal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for publication in publications %}
+            <tr>
+                <td>{{ publication.title }}</td>
+                <td>{{ publication.year }}</td>
+                <td>
+                    {% if publication.journal %}
+                        {{ publication.journal.name }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p>Keine Publikationen vorhanden.</p>
+{% endif %}
+{% endblock %}
