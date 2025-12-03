@@ -158,6 +158,28 @@
         const statusElement = document.getElementById("pdf-status");
         const pagesContainer = document.getElementById("pdf-pages");
 
+        const renderFallbackViewer = (message) => {
+            setStatus(message || "PDF konnte nicht geladen werden. Fallback wird angezeigt.");
+
+            if (!pagesContainer) {
+                return;
+            }
+
+            pagesContainer.innerHTML = "";
+
+            const iframe = document.createElement("iframe");
+            iframe.src = pdfUrl;
+            iframe.title = "PDF Vorschau";
+            iframe.className = "w-100 border rounded";
+            iframe.style.minHeight = "70vh";
+            pagesContainer.appendChild(iframe);
+        };
+
+        if (!window.pdfjsLib) {
+            renderFallbackViewer("PDF-Viewer konnte nicht geladen werden. Fallback wird verwendet.");
+            return;
+        }
+
         if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
             pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js";
         }
@@ -398,7 +420,7 @@
                 setStatus("PDF bereit. Markierungen hinzufügen oder bearbeiten.");
             } catch (error) {
                 console.error(error);
-                setStatus("PDF konnte nicht geladen werden.");
+                renderFallbackViewer("PDF konnte nicht geladen werden. Fallback wird verwendet.");
             }
         };
 
