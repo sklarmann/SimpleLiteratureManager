@@ -201,6 +201,45 @@
             pagesContainer.appendChild(actions);
         };
 
+        const renderInlineBlobViewer = async (message) => {
+            if (toggleButton) {
+                toggleButton.disabled = true;
+                toggleButton.title = "Markierungen stehen ohne PDF.js nicht zur Verfügung.";
+            }
+
+            try {
+                setStatus(message || "PDF wird im Browser angezeigt (ohne Markierungen)...");
+
+                const response = await fetch(pdfUrl);
+                if (!response.ok) {
+                    throw new Error("PDF konnte nicht geladen werden");
+                }
+
+                const blob = await response.blob();
+                const objectUrl = URL.createObjectURL(blob);
+
+                pagesContainer.innerHTML = "";
+
+                const iframe = document.createElement("iframe");
+                iframe.src = objectUrl;
+                iframe.title = "PDF Vorschau";
+                iframe.className = "w-100 border rounded";
+                iframe.style.minHeight = "70vh";
+                iframe.onload = () => URL.revokeObjectURL(objectUrl);
+
+                const hint = document.createElement("div");
+                hint.className = "alert alert-info mt-2";
+                hint.textContent = "Das PDF wird mit dem Browser-Viewer angezeigt. Markierungen sind in diesem Modus deaktiviert.";
+
+                pagesContainer.appendChild(iframe);
+                pagesContainer.appendChild(hint);
+                setStatus("PDF geladen. Markierungen sind deaktiviert.");
+            } catch (error) {
+                console.error(error);
+                renderFallbackViewer("PDF konnte nicht geladen werden. Fallback wird verwendet.");
+            }
+        };
+
         const overlays = {};
         let drawMode = false;
         let selectionBox = null;
@@ -487,7 +526,7 @@
                 setStatus("PDF bereit. Markierungen hinzufügen oder bearbeiten.");
             } catch (error) {
                 console.error(error);
-                renderFallbackViewer("PDF konnte nicht geladen werden. Fallback wird verwendet.");
+                renderInlineBlobViewer("PDF konnte nicht geladen werden. Browser-Anzeige ohne Markierungen aktiviert.");
             }
         };
 
@@ -497,7 +536,7 @@
             .then(configureWorker)
             .then(loadDocument)
             .catch(() => {
-                renderFallbackViewer("PDF-Viewer konnte nicht geladen werden. Fallback wird verwendet.");
+                renderInlineBlobViewer("PDF-Viewer konnte nicht geladen werden. Browser-Anzeige ohne Markierungen aktiviert.");
             });
     });
 </script>
