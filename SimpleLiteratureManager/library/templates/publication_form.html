@@ -107,6 +107,40 @@
     </div>
 
     <div class="mb-3">
+        {{ form.projects.label_tag }}
+        <div class="row g-2 align-items-start">
+            <div class="col-md-5">
+                <label for="available-projects" class="form-label">Alle Projekte</label>
+                <input
+                    type="text"
+                    id="project-filter"
+                    class="form-control mb-2"
+                    placeholder="Projekte filtern"
+                />
+                <select multiple class="form-select" size="10" id="available-projects"></select>
+            </div>
+            <div class="col-md-2 d-flex flex-column align-items-center justify-content-center gap-2">
+                <button type="button" class="btn btn-outline-primary w-100" id="add-project">
+                    Hinzufügen &raquo;
+                </button>
+                <button type="button" class="btn btn-outline-secondary w-100" id="remove-project">
+                    &laquo; Entfernen
+                </button>
+            </div>
+            <div class="col-md-5">
+                <label for="selected-projects" class="form-label">Zugeordnete Projekte</label>
+                <select multiple class="form-select" size="12" id="selected-projects"></select>
+            </div>
+        </div>
+        <div class="d-none">
+            {{ form.projects }}
+        </div>
+        {% for error in form.projects.errors %}
+            <div class="text-danger small">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
         {{ form.abstract.label_tag }}
         {{ form.abstract }}
         {% for error in form.abstract.errors %}
@@ -217,6 +251,15 @@
             filterInputId: "tag-filter",
             addButtonId: "add-tag",
             removeButtonId: "remove-tag",
+        });
+
+        setupDualList({
+            hiddenSelectId: "id_projects",
+            availableSelectId: "available-projects",
+            selectedSelectId: "selected-projects",
+            filterInputId: "project-filter",
+            addButtonId: "add-project",
+            removeButtonId: "remove-project",
         });
     })();
 </script>

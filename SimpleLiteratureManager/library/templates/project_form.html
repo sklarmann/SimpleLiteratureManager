@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{% if is_edit %}Projekt bearbeiten{% else %}Projekt hinzufügen{% endif %}</h1>
+
+<form method="POST" class="mt-3">
+    {% csrf_token %}
+
+    <div class="mb-3">
+        {{ form.title.label_tag }}
+        {{ form.title }}
+        {% for error in form.title.errors %}
+            <div class="text-danger small">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.description.label_tag }}
+        {{ form.description }}
+        {% for error in form.description.errors %}
+            <div class="text-danger small">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.publications.label_tag }}
+        {{ form.publications }}
+        <div class="form-text">Halte Strg (oder Cmd auf Mac), um mehrere Publikationen auszuwählen.</div>
+        {% for error in form.publications.errors %}
+            <div class="text-danger small">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <button class="btn btn-primary" type="submit">{% if is_edit %}Aktualisieren{% else %}Speichern{% endif %}</button>
+    {% if is_edit %}
+        <a class="btn btn-secondary" href="{% url 'project_detail' project.id %}">Abbrechen</a>
+    {% else %}
+        <a class="btn btn-secondary" href="{% url 'project_list' %}">Abbrechen</a>
+    {% endif %}
+</form>
+{% endblock %}

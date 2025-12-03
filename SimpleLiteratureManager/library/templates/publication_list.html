@@ -15,6 +15,7 @@
                 <th scope="col" data-sort="string">Titel</th>
                 <th scope="col" data-sort="string">Autoren</th>
                 <th scope="col" data-sort="string">Tags</th>
+                <th scope="col" data-sort="string">Projekte</th>
             </tr>
         </thead>
         <tbody>
@@ -35,6 +36,15 @@
                     {% if p.tags.all|length %}
                         {% for tag in p.tags.all %}
                             <span class="badge bg-secondary me-1">{{ tag.name }}</span>
+                        {% endfor %}
+                    {% else %}
+                        &mdash;
+                    {% endif %}
+                </td>
+                <td data-value="{{ p.projects.all|join:', ' }}">
+                    {% if p.projects.all|length %}
+                        {% for project in p.projects.all %}
+                            <a href="{% url 'project_detail' project.id %}">{{ project.title }}</a>{% if not forloop.last %}, {% endif %}
                         {% endfor %}
                     {% else %}
                         &mdash;

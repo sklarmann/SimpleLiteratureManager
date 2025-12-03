@@ -1,5 +1,5 @@
 from django import forms
-from .models import Author, Journal, Publication, Tag
+from .models import Author, Journal, Project, Publication, Tag
 
 class AuthorForm(forms.ModelForm):
     class Meta:
@@ -32,6 +32,7 @@ class PublicationForm(forms.ModelForm):
             "authors",
             "journal",
             "tags",
+            "projects",
             "abstract",
             "pdf",
         ]
@@ -39,6 +40,7 @@ class PublicationForm(forms.ModelForm):
             "authors": forms.SelectMultiple(attrs={"class": "form-select"}),
             "journal": forms.Select(attrs={"class": "form-select"}),
             "tags": forms.SelectMultiple(attrs={"class": "form-select"}),
+            "projects": forms.SelectMultiple(attrs={"class": "form-select"}),
             "year": forms.NumberInput(attrs={"class": "form-control"}),
             "title": forms.TextInput(attrs={"class": "form-control"}),
             "doi": forms.TextInput(attrs={"class": "form-control"}),
@@ -59,3 +61,39 @@ class DoiImportForm(forms.Form):
             }
         ),
     )
+
+
+class ProjectForm(forms.ModelForm):
+    publications = forms.ModelMultipleChoiceField(
+        queryset=Publication.objects.all(),
+        required=False,
+        widget=forms.SelectMultiple(attrs={"class": "form-select"}),
+    )
+
+    class Meta:
+        model = Project
+        fields = ["title", "description"]
+        widgets = {
+            "title": forms.TextInput(attrs={"class": "form-control"}),
+            "description": forms.Textarea(
+                attrs={"class": "form-control", "rows": 3}
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields["publications"].initial = self.instance.publications.all()
+
+    def save(self, commit=True):
+        project = super().save(commit)
+
+        def save_m2m():
+            project.publications.set(self.cleaned_data.get("publications", []))
+
+        if commit:
+            save_m2m()
+        else:
+            self.save_m2m = save_m2m
+
+        return project

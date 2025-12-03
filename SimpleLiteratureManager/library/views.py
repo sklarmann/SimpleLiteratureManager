@@ -8,8 +8,15 @@ from django.db import models, transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.html import strip_tags
 
-from .forms import AuthorForm, DoiImportForm, JournalForm, PublicationForm, TagForm
-from .models import Author, Journal, Publication, Tag
+from .forms import (
+    AuthorForm,
+    DoiImportForm,
+    JournalForm,
+    ProjectForm,
+    PublicationForm,
+    TagForm,
+)
+from .models import Author, Journal, Project, Publication, Tag
 
 def author_list(request):
     authors = Author.objects.all()
@@ -142,7 +149,7 @@ def journal_create(request):
 def publication_list(request):
     publications = (
         Publication.objects.select_related("journal")
-        .prefetch_related("authors", "tags")
+        .prefetch_related("authors", "tags", "projects")
     )
     return render(request, "publication_list.html", {"publications": publications})
 
@@ -160,7 +167,7 @@ def publication_create(request):
 
 def publication_detail(request, pk):
     publication = get_object_or_404(
-        Publication.objects.select_related("journal").prefetch_related("authors", "tags"),
+        Publication.objects.select_related("journal").prefetch_related("authors", "tags", "projects"),
         pk=pk,
     )
     return render(request, "publication_detail.html", {"publication": publication})
@@ -180,6 +187,50 @@ def publication_update(request, pk):
         request,
         "publication_form.html",
         {"form": form, "publication": publication, "is_edit": True},
+    )
+
+
+def project_list(request):
+    projects = Project.objects.prefetch_related(
+        "publications__authors", "publications__journal"
+    )
+    return render(request, "project_list.html", {"projects": projects})
+
+
+def project_detail(request, pk):
+    project = get_object_or_404(
+        Project.objects.prefetch_related(
+            "publications__authors", "publications__journal", "publications__tags"
+        ),
+        pk=pk,
+    )
+    return render(request, "project_detail.html", {"project": project})
+
+
+def project_create(request):
+    if request.method == "POST":
+        form = ProjectForm(request.POST)
+        if form.is_valid():
+            project = form.save()
+            return redirect("project_detail", pk=project.pk)
+    else:
+        form = ProjectForm()
+    return render(request, "project_form.html", {"form": form, "is_edit": False})
+
+
+def project_update(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+    if request.method == "POST":
+        form = ProjectForm(request.POST, instance=project)
+        if form.is_valid():
+            project = form.save()
+            return redirect("project_detail", pk=project.pk)
+    else:
+        form = ProjectForm(instance=project)
+    return render(
+        request,
+        "project_form.html",
+        {"form": form, "is_edit": True, "project": project},
     )
 
 

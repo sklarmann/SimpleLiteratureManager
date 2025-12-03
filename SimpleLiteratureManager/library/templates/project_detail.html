@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="mb-0">{{ project.title }}</h1>
+        <p class="mb-0 text-muted">Projektdetails</p>
+    </div>
+    <a class="btn btn-primary" href="{% url 'project_update' project.id %}">Bearbeiten</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5>Beschreibung</h5>
+        <p class="mb-0">{{ project.description|default:"Keine Beschreibung hinterlegt." }}</p>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5>Publikationen</h5>
+        {% if project.publications.all|length %}
+            <ul class="list-group list-group-flush">
+                {% for publication in project.publications.all %}
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <a href="{% url 'publication_detail' publication.id %}" class="fw-bold">{{ publication.title }}</a>
+                                <div class="text-muted">{{ publication.year }} | {{ publication.journal|default_if_none:"-" }}</div>
+                                <div>
+                                    {% for author in publication.authors.all %}
+                                        <a href="{% url 'author_detail' author.id %}">{{ author }}</a>{% if not forloop.last %}, {% endif %}
+                                    {% empty %}
+                                        &mdash;
+                                    {% endfor %}
+                                </div>
+                                <div class="mt-1">
+                                    {% for tag in publication.tags.all %}
+                                        <span class="badge bg-secondary me-1">{{ tag.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted mb-0">Keine Publikationen zugeordnet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<a class="btn btn-secondary" href="{% url 'project_list' %}">Zurück zur Liste</a>
+{% endblock %}
