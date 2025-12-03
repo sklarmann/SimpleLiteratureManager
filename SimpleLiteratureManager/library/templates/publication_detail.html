@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
@@ -149,7 +150,6 @@
     }
 </style>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.js" integrity="sha512-7J2egGHt32vl9cTVMIOGe7TSCe+5pfRk3acb2gnxZQvfhOtKCkDbkAN0om0iM5/MgX63OY9UKen8drb1uK7Gpg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
     document.addEventListener("DOMContentLoaded", () => {
         const pdfUrl = "{{ publication.pdf.url }}";
@@ -157,6 +157,10 @@
         const toggleButton = document.getElementById("toggle-annotation");
         const statusElement = document.getElementById("pdf-status");
         const pagesContainer = document.getElementById("pdf-pages");
+        const staticPdfJs = "{% static 'pdfjs/pdf.min.js' %}";
+        const staticWorker = "{% static 'pdfjs/pdf.worker.min.js' %}";
+        const cdnPdfJs = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.js";
+        const cdnWorker = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js";
 
         const renderFallbackViewer = (message) => {
             setStatus(message || "PDF konnte nicht geladen werden. Fallback wird angezeigt.");
@@ -175,18 +179,47 @@
             pagesContainer.appendChild(iframe);
         };
 
-        if (!window.pdfjsLib) {
-            renderFallbackViewer("PDF-Viewer konnte nicht geladen werden. Fallback wird verwendet.");
-            return;
-        }
-
-        if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js";
-        }
-
         const overlays = {};
         let drawMode = false;
         let selectionBox = null;
+
+        const loadScript = (src) => new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = src;
+            script.referrerPolicy = "no-referrer";
+            script.addEventListener("load", resolve, { once: true });
+            script.addEventListener("error", reject, { once: true });
+            document.head.appendChild(script);
+        });
+
+        const ensurePdfJsLoaded = async () => {
+            if (window.pdfjsLib) {
+                return;
+            }
+
+            try {
+                await loadScript(staticPdfJs);
+            } catch (error) {
+                await loadScript(cdnPdfJs);
+            }
+
+            if (!window.pdfjsLib) {
+                throw new Error("PDF.js konnte nicht geladen werden");
+            }
+        };
+
+        const configureWorker = async () => {
+            if (!window.pdfjsLib) {
+                return;
+            }
+
+            try {
+                const response = await fetch(staticWorker, { method: "HEAD" });
+                pdfjsLib.GlobalWorkerOptions.workerSrc = response.ok ? staticWorker : cdnWorker;
+            } catch (error) {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = cdnWorker;
+            }
+        };
 
         const getCsrfToken = () => {
             const match = document.cookie.match(/csrftoken=([^;]+)/);
@@ -425,7 +458,13 @@
         };
 
         toggleButton.addEventListener("click", () => toggleDrawMode(!drawMode));
-        loadDocument();
+
+        ensurePdfJsLoaded()
+            .then(configureWorker)
+            .then(loadDocument)
+            .catch(() => {
+                renderFallbackViewer("PDF-Viewer konnte nicht geladen werden. Fallback wird verwendet.");
+            });
     });
 </script>
 {% endif %}
