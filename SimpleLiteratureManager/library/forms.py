@@ -27,7 +27,7 @@ class PublicationForm(forms.ModelForm):
             "pdf",
         ]
         widgets = {
-            "authors": forms.SelectMultiple(attrs={"class": "form-select"}),
+            "authors": forms.CheckboxSelectMultiple(attrs={"class": "btn-check"}),
             "journal": forms.Select(attrs={"class": "form-select"}),
             "tags": forms.SelectMultiple(attrs={"class": "form-select"}),
             "year": forms.NumberInput(attrs={"class": "form-control"}),

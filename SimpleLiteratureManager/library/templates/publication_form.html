@@ -32,7 +32,12 @@
 
     <div class="mb-3">
         {{ form.authors.label_tag }}
-        {{ form.authors }}
+        <div class="d-flex flex-wrap gap-2" role="group" aria-label="Autoren auswählen">
+            {% for author in form.authors %}
+                {{ author.tag }}
+                <label class="btn btn-outline-primary" for="{{ author.id_for_label }}">{{ author.choice_label }}</label>
+            {% endfor %}
+        </div>
         {% for error in form.authors.errors %}
             <div class="text-danger small">{{ error }}</div>
         {% endfor %}
