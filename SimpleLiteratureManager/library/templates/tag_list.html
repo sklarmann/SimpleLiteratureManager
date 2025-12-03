@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Tags</h1>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Tags</h1>
+    <a class="btn btn-primary" href="{% url 'tag_create' %}">Tag hinzufügen</a>
+</div>
 
 <div class="card">
     <div class="card-body p-0">

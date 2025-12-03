@@ -8,7 +8,7 @@ from django.db import models, transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.html import strip_tags
 
-from .forms import AuthorForm, DoiImportForm, JournalForm, PublicationForm
+from .forms import AuthorForm, DoiImportForm, JournalForm, PublicationForm, TagForm
 from .models import Author, Journal, Publication, Tag
 
 def author_list(request):
@@ -116,6 +116,17 @@ def journal_list(request):
 def tag_list(request):
     tags = Tag.objects.annotate(publication_count=models.Count("publications"))
     return render(request, "tag_list.html", {"tags": tags})
+
+
+def tag_create(request):
+    if request.method == "POST":
+        form = TagForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect("tag_list")
+    else:
+        form = TagForm()
+    return render(request, "tag_form.html", {"form": form})
 
 
 def journal_create(request):

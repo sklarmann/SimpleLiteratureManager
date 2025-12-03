@@ -13,6 +13,15 @@ class JournalForm(forms.ModelForm):
         fields = ["name", "issn", "publisher"]
 
 
+class TagForm(forms.ModelForm):
+    class Meta:
+        model = Tag
+        fields = ["name"]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control"}),
+        }
+
+
 class PublicationForm(forms.ModelForm):
     class Meta:
         model = Publication
