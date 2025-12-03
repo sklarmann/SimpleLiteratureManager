@@ -74,7 +74,33 @@
 
     <div class="mb-3">
         {{ form.tags.label_tag }}
-        {{ form.tags }}
+        <div class="row g-2 align-items-start">
+            <div class="col-md-5">
+                <label for="available-tags" class="form-label">Alle Tags</label>
+                <input
+                    type="text"
+                    id="tag-filter"
+                    class="form-control mb-2"
+                    placeholder="Tags filtern"
+                />
+                <select multiple class="form-select" size="10" id="available-tags"></select>
+            </div>
+            <div class="col-md-2 d-flex flex-column align-items-center justify-content-center gap-2">
+                <button type="button" class="btn btn-outline-primary w-100" id="add-tag">
+                    Hinzufügen &raquo;
+                </button>
+                <button type="button" class="btn btn-outline-secondary w-100" id="remove-tag">
+                    &laquo; Entfernen
+                </button>
+            </div>
+            <div class="col-md-5">
+                <label for="selected-tags" class="form-label">Zugeordnete Tags</label>
+                <select multiple class="form-select" size="12" id="selected-tags"></select>
+            </div>
+        </div>
+        <div class="d-none">
+            {{ form.tags }}
+        </div>
         {% for error in form.tags.errors %}
             <div class="text-danger small">{{ error }}</div>
         {% endfor %}
@@ -106,63 +132,92 @@
 
 <script>
     (function () {
-        const hiddenSelect = document.getElementById("id_authors");
-        const availableSelect = document.getElementById("available-authors");
-        const selectedSelect = document.getElementById("selected-authors");
-        const filterInput = document.getElementById("author-filter");
-        const addButton = document.getElementById("add-author");
-        const removeButton = document.getElementById("remove-author");
+        const setupDualList = ({
+            hiddenSelectId,
+            availableSelectId,
+            selectedSelectId,
+            filterInputId,
+            addButtonId,
+            removeButtonId,
+        }) => {
+            const hiddenSelect = document.getElementById(hiddenSelectId);
+            const availableSelect = document.getElementById(availableSelectId);
+            const selectedSelect = document.getElementById(selectedSelectId);
+            const filterInput = document.getElementById(filterInputId);
+            const addButton = document.getElementById(addButtonId);
+            const removeButton = document.getElementById(removeButtonId);
 
-        if (!hiddenSelect) {
-            return;
-        }
-
-        const allOptions = Array.from(hiddenSelect.options).map((option) => option.cloneNode(true));
-
-        const renderLists = () => {
-            availableSelect.innerHTML = "";
-            selectedSelect.innerHTML = "";
-
-            const filterValue = filterInput.value.toLowerCase();
-
-            allOptions.forEach((option) => {
-                const targetSelect = option.selected ? selectedSelect : availableSelect;
-                const matchesFilter = option.text.toLowerCase().includes(filterValue);
-
-                if (!option.selected && filterValue && !matchesFilter) {
-                    return;
-                }
-
-                targetSelect.appendChild(option.cloneNode(true));
-            });
-        };
-
-        const moveOptions = (fromSelect, toSelect, markSelected) => {
-            const selectedOptions = Array.from(fromSelect.selectedOptions);
-            if (!selectedOptions.length) {
+            if (!hiddenSelect || !availableSelect || !selectedSelect) {
                 return;
             }
 
-            selectedOptions.forEach((option) => {
-                const original = allOptions.find((opt) => opt.value === option.value);
-                if (original) {
-                    original.selected = markSelected;
+            const allOptions = Array.from(hiddenSelect.options).map((option) => option.cloneNode(true));
+
+            const renderLists = () => {
+                availableSelect.innerHTML = "";
+                selectedSelect.innerHTML = "";
+
+                const filterValue = filterInput?.value.toLowerCase() || "";
+
+                allOptions.forEach((option) => {
+                    const targetSelect = option.selected ? selectedSelect : availableSelect;
+                    const matchesFilter = option.text.toLowerCase().includes(filterValue);
+
+                    if (!option.selected && filterValue && !matchesFilter) {
+                        return;
+                    }
+
+                    targetSelect.appendChild(option.cloneNode(true));
+                });
+            };
+
+            const moveOptions = (fromSelect, markSelected) => {
+                const selectedOptions = Array.from(fromSelect.selectedOptions);
+                if (!selectedOptions.length) {
+                    return;
                 }
+
+                selectedOptions.forEach((option) => {
+                    const original = allOptions.find((opt) => opt.value === option.value);
+                    if (original) {
+                        original.selected = markSelected;
+                    }
+                });
+                renderLists();
+            };
+
+            addButton?.addEventListener("click", () => moveOptions(availableSelect, true));
+            removeButton?.addEventListener("click", () => moveOptions(selectedSelect, false));
+            filterInput?.addEventListener("input", renderLists);
+
+            document.querySelector("form")?.addEventListener("submit", () => {
+                Array.from(hiddenSelect.options).forEach((option) => {
+                    option.selected = allOptions.some(
+                        (opt) => opt.value === option.value && opt.selected,
+                    );
+                });
             });
+
             renderLists();
         };
 
-        addButton?.addEventListener("click", () => moveOptions(availableSelect, selectedSelect, true));
-        removeButton?.addEventListener("click", () => moveOptions(selectedSelect, availableSelect, false));
-        filterInput?.addEventListener("input", renderLists);
-
-        document.querySelector("form")?.addEventListener("submit", () => {
-            Array.from(hiddenSelect.options).forEach((option) => {
-                option.selected = allOptions.some((opt) => opt.value === option.value && opt.selected);
-            });
+        setupDualList({
+            hiddenSelectId: "id_authors",
+            availableSelectId: "available-authors",
+            selectedSelectId: "selected-authors",
+            filterInputId: "author-filter",
+            addButtonId: "add-author",
+            removeButtonId: "remove-author",
         });
 
-        renderLists();
+        setupDualList({
+            hiddenSelectId: "id_tags",
+            availableSelectId: "available-tags",
+            selectedSelectId: "selected-tags",
+            filterInputId: "tag-filter",
+            addButtonId: "add-tag",
+            removeButtonId: "remove-tag",
+        });
     })();
 </script>
 
