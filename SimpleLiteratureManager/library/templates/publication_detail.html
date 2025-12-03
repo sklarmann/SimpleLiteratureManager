@@ -171,12 +171,34 @@
 
             pagesContainer.innerHTML = "";
 
-            const iframe = document.createElement("iframe");
-            iframe.src = pdfUrl;
-            iframe.title = "PDF Vorschau";
-            iframe.className = "w-100 border rounded";
-            iframe.style.minHeight = "70vh";
-            pagesContainer.appendChild(iframe);
+            const alert = document.createElement("div");
+            alert.className = "alert alert-warning";
+            alert.innerHTML = `
+                <div class="fw-bold mb-1">PDF-Vorschau nicht verfügbar.</div>
+                <div>Das Dokument konnte nicht eingebettet werden (z. B. NS_ERROR_XFO_VIOLATION). Öffne das PDF stattdessen in einem neuen Tab oder lade es herunter.</div>
+            `;
+
+            const actions = document.createElement("div");
+            actions.className = "d-flex gap-2 align-items-center mt-2";
+
+            const openButton = document.createElement("a");
+            openButton.href = pdfUrl;
+            openButton.target = "_blank";
+            openButton.rel = "noopener";
+            openButton.className = "btn btn-primary";
+            openButton.textContent = "PDF in neuem Tab öffnen";
+
+            const downloadButton = document.createElement("a");
+            downloadButton.href = pdfUrl;
+            downloadButton.download = "";
+            downloadButton.className = "btn btn-outline-secondary";
+            downloadButton.textContent = "PDF herunterladen";
+
+            actions.appendChild(openButton);
+            actions.appendChild(downloadButton);
+
+            pagesContainer.appendChild(alert);
+            pagesContainer.appendChild(actions);
         };
 
         const overlays = {};
