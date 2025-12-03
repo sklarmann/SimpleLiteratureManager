@@ -162,7 +162,7 @@
         const cdnPdfJs = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.js";
         const cdnWorker = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js";
 
-        const renderFallbackViewer = (message) => {
+        const renderFallbackViewer = async (message) => {
             setStatus(message || "PDF konnte nicht geladen werden. Fallback wird angezeigt.");
 
             if (!pagesContainer) {
@@ -171,34 +171,66 @@
 
             pagesContainer.innerHTML = "";
 
-            const alert = document.createElement("div");
-            alert.className = "alert alert-warning";
-            alert.innerHTML = `
-                <div class="fw-bold mb-1">PDF-Vorschau nicht verfügbar.</div>
-                <div>Das Dokument konnte nicht eingebettet werden (z. B. NS_ERROR_XFO_VIOLATION). Öffne das PDF stattdessen in einem neuen Tab oder lade es herunter.</div>
-            `;
+            const embedWrapper = document.createElement("div");
+            embedWrapper.className = "ratio ratio-16x9 border rounded bg-white";
 
-            const actions = document.createElement("div");
-            actions.className = "d-flex gap-2 align-items-center mt-2";
+            const embed = document.createElement("object");
+            embed.type = "application/pdf";
+            embed.className = "w-100 h-100";
+            embed.setAttribute("aria-label", "PDF Vorschau");
+            embedWrapper.appendChild(embed);
+            pagesContainer.appendChild(embedWrapper);
 
-            const openButton = document.createElement("a");
-            openButton.href = pdfUrl;
-            openButton.target = "_blank";
-            openButton.rel = "noopener";
-            openButton.className = "btn btn-primary";
-            openButton.textContent = "PDF in neuem Tab öffnen";
+            const setBlobSource = async () => {
+                const response = await fetch(pdfUrl);
+                if (!response.ok) {
+                    throw new Error("PDF konnte nicht geladen werden");
+                }
 
-            const downloadButton = document.createElement("a");
-            downloadButton.href = pdfUrl;
-            downloadButton.download = "";
-            downloadButton.className = "btn btn-outline-secondary";
-            downloadButton.textContent = "PDF herunterladen";
+                const blob = await response.blob();
+                embed.data = URL.createObjectURL(blob);
+            };
 
-            actions.appendChild(openButton);
-            actions.appendChild(downloadButton);
+            const renderLinksFallback = () => {
+                pagesContainer.innerHTML = "";
 
-            pagesContainer.appendChild(alert);
-            pagesContainer.appendChild(actions);
+                const alert = document.createElement("div");
+                alert.className = "alert alert-warning";
+                alert.innerHTML = `
+                    <div class="fw-bold mb-1">PDF-Vorschau nicht verfügbar.</div>
+                    <div>Das Dokument konnte nicht eingebettet werden (z. B. NS_ERROR_XFO_VIOLATION). Öffne das PDF stattdessen in einem neuen Tab oder lade es herunter.</div>
+                `;
+
+                const actions = document.createElement("div");
+                actions.className = "d-flex gap-2 align-items-center mt-2";
+
+                const openButton = document.createElement("a");
+                openButton.href = pdfUrl;
+                openButton.target = "_blank";
+                openButton.rel = "noopener";
+                openButton.className = "btn btn-primary";
+                openButton.textContent = "PDF in neuem Tab öffnen";
+
+                const downloadButton = document.createElement("a");
+                downloadButton.href = pdfUrl;
+                downloadButton.download = "";
+                downloadButton.className = "btn btn-outline-secondary";
+                downloadButton.textContent = "PDF herunterladen";
+
+                actions.appendChild(openButton);
+                actions.appendChild(downloadButton);
+
+                pagesContainer.appendChild(alert);
+                pagesContainer.appendChild(actions);
+            };
+
+            try {
+                await setBlobSource();
+                setStatus("PDF im Browser eingebettet.");
+            } catch (error) {
+                console.error(error);
+                renderLinksFallback();
+            }
         };
 
         const overlays = {};
