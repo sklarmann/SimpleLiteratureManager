@@ -25,6 +25,16 @@ urlpatterns = [
     path(
         "publications/<int:pk>/edit/", views.publication_update, name="publication_update"
     ),
+    path(
+        "publications/<int:pk>/annotations/",
+        views.publication_annotations,
+        name="publication_annotations",
+    ),
+    path(
+        "publications/<int:pk>/annotations/<int:annotation_id>/",
+        views.publication_annotation_detail,
+        name="publication_annotation_detail",
+    ),
     path("publications/add-doi/", views.publication_add_by_doi, name="publication_add_by_doi"),
     path("projects/", views.project_list, name="project_list"),
     path("projects/add/", views.project_create, name="project_create"),

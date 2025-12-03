@@ -1,3 +1,4 @@
+import json
 from collections import defaultdict
 from difflib import SequenceMatcher
 from itertools import combinations
@@ -5,8 +6,10 @@ import re
 
 import requests
 from django.db import models, transaction
+from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.html import strip_tags
+from django.views.decorators.http import require_http_methods
 
 from .forms import (
     AuthorForm,
@@ -16,7 +19,7 @@ from .forms import (
     PublicationForm,
     TagForm,
 )
-from .models import Author, Journal, Project, Publication, Tag
+from .models import Author, Journal, Project, Publication, PublicationAnnotation, Tag
 
 def author_list(request):
     authors = Author.objects.all()
@@ -199,6 +202,91 @@ def publication_detail(request, pk):
         pk=pk,
     )
     return render(request, "publication_detail.html", {"publication": publication})
+
+
+def _serialize_annotation(annotation):
+    return {
+        "id": annotation.id,
+        "page_number": annotation.page_number,
+        "x": annotation.x,
+        "y": annotation.y,
+        "width": annotation.width,
+        "height": annotation.height,
+        "comment": annotation.comment,
+        "color": annotation.color,
+        "created_at": annotation.created_at.isoformat(),
+        "updated_at": annotation.updated_at.isoformat(),
+    }
+
+
+@require_http_methods(["GET", "POST"])
+def publication_annotations(request, pk):
+    publication = get_object_or_404(Publication, pk=pk)
+
+    if request.method == "GET":
+        annotations = publication.annotations.all()
+        return JsonResponse({"annotations": [_serialize_annotation(a) for a in annotations]})
+
+    try:
+        payload = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return HttpResponseBadRequest("Ungültige Daten")
+
+    required_fields = ["page_number", "x", "y", "width", "height"]
+    if not all(field in payload for field in required_fields):
+        return HttpResponseBadRequest("Fehlende Felder für die Markierung")
+
+    try:
+        annotation = PublicationAnnotation.objects.create(
+            publication=publication,
+            page_number=int(payload["page_number"]),
+            x=float(payload["x"]),
+            y=float(payload["y"]),
+            width=float(payload["width"]),
+            height=float(payload["height"]),
+            comment=payload.get("comment", ""),
+            color=payload.get("color", "#ffc107"),
+        )
+    except (TypeError, ValueError):
+        return HttpResponseBadRequest("Ungültige Werte für die Markierung")
+
+    return JsonResponse(_serialize_annotation(annotation), status=201)
+
+
+@require_http_methods(["PATCH", "PUT", "DELETE"])
+def publication_annotation_detail(request, pk, annotation_id):
+    annotation = get_object_or_404(
+        PublicationAnnotation, publication_id=pk, pk=annotation_id
+    )
+
+    if request.method == "DELETE":
+        annotation.delete()
+        return JsonResponse({}, status=204)
+
+    try:
+        payload = json.loads(request.body or "{}")
+    except json.JSONDecodeError:
+        return HttpResponseBadRequest("Ungültige Daten")
+
+    updatable_fields = {
+        "page_number": int,
+        "x": float,
+        "y": float,
+        "width": float,
+        "height": float,
+        "comment": str,
+        "color": str,
+    }
+
+    for field, caster in updatable_fields.items():
+        if field in payload:
+            try:
+                setattr(annotation, field, caster(payload[field]))
+            except (TypeError, ValueError):
+                return HttpResponseBadRequest("Ungültige Werte für die Markierung")
+
+    annotation.save()
+    return JsonResponse(_serialize_annotation(annotation))
 
 
 def publication_update(request, pk):

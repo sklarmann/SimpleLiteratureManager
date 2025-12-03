@@ -55,11 +55,356 @@
             <dd class="col-sm-9">{{ publication.abstract|default_if_none:"-" }}</dd>
         </dl>
 
-        {% if publication.pdf %}
-            <a href="{{ publication.pdf.url }}" class="btn btn-outline-primary mt-3" target="_blank" rel="noopener">PDF öffnen</a>
-        {% endif %}
     </div>
 </div>
 
+{% if publication.pdf %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-0">PDF mit Markierungen</h5>
+            <small class="text-muted">Ziehe einen Bereich auf, hinterlasse einen Kommentar und speichere deine Notizen direkt zur Publikation.</small>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ publication.pdf.url }}" class="btn btn-outline-secondary" target="_blank" rel="noopener">PDF in neuem Tab</a>
+            <button id="toggle-annotation" class="btn btn-outline-primary">Markierung hinzufügen</button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="pdf-viewer">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="small text-muted" id="pdf-status">PDF wird geladen...</div>
+                <div class="small text-muted">Klick auf bestehende Markierungen, um Kommentare zu bearbeiten oder zu löschen.</div>
+            </div>
+            <div id="pdf-pages" class="pdf-pages border rounded bg-light"></div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <a class="btn btn-secondary" href="{% url 'publication_list' %}">Zurück zur Liste</a>
+
+{% if publication.pdf %}
+<style>
+    .pdf-viewer {
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .pdf-pages {
+        overflow-y: auto;
+        padding: 0.75rem;
+        max-height: 70vh;
+    }
+
+    .pdf-page {
+        position: relative;
+        margin: 0 auto 1rem;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+        background: white;
+    }
+
+    .annotation-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        pointer-events: auto;
+    }
+
+    .annotation-layer.draw-mode {
+        cursor: crosshair;
+    }
+
+    .pdf-annotation {
+        position: absolute;
+        border: 2px solid #ffc107;
+        background-color: rgba(255, 193, 7, 0.25);
+        border-radius: 4px;
+        cursor: pointer;
+        transition: box-shadow 0.2s ease;
+        pointer-events: auto;
+    }
+
+    .pdf-annotation:hover {
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+    }
+
+    .annotation-label {
+        position: absolute;
+        right: 0;
+        top: 0;
+        background: #ffc107;
+        color: #000;
+        padding: 2px 6px;
+        font-size: 12px;
+        border-bottom-left-radius: 4px;
+    }
+
+    .selection-rectangle {
+        position: absolute;
+        border: 2px dashed #0d6efd;
+        background-color: rgba(13, 110, 253, 0.15);
+        pointer-events: none;
+    }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.js" integrity="sha512-7J2egGHt32vl9cTVMIOGe7TSCe+5pfRk3acb2gnxZQvfhOtKCkDbkAN0om0iM5/MgX63OY9UKen8drb1uK7Gpg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const pdfUrl = "{{ publication.pdf.url }}";
+        const annotationsEndpoint = "{% url 'publication_annotations' publication.id %}";
+        const toggleButton = document.getElementById("toggle-annotation");
+        const statusElement = document.getElementById("pdf-status");
+        const pagesContainer = document.getElementById("pdf-pages");
+
+        if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js";
+        }
+
+        const overlays = {};
+        let drawMode = false;
+        let selectionBox = null;
+
+        const getCsrfToken = () => {
+            const match = document.cookie.match(/csrftoken=([^;]+)/);
+            return match ? match[1] : "";
+        };
+
+        const setStatus = (message) => {
+            if (statusElement) {
+                statusElement.textContent = message;
+            }
+        };
+
+        const withJson = (url, options = {}) => {
+            const headers = options.headers || {};
+            return fetch(url, {
+                ...options,
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCsrfToken(),
+                    ...headers,
+                },
+            });
+        };
+
+        const annotationDetailUrl = (id) => `${annotationsEndpoint}${id}/`;
+
+        const renderAnnotation = (annotation) => {
+            const overlay = overlays[annotation.page_number];
+            if (!overlay) return;
+
+            const element = document.createElement("div");
+            element.className = "pdf-annotation";
+            element.style.left = `${annotation.x * 100}%`;
+            element.style.top = `${annotation.y * 100}%`;
+            element.style.width = `${annotation.width * 100}%`;
+            element.style.height = `${annotation.height * 100}%`;
+            element.style.borderColor = annotation.color || "#ffc107";
+            element.style.backgroundColor = `${annotation.color || "#ffc107"}33`;
+            element.title = annotation.comment || "Keine Notiz hinterlegt";
+
+            const label = document.createElement("span");
+            label.className = "annotation-label";
+            label.textContent = annotation.comment ? "💬" : "✏️";
+            element.appendChild(label);
+
+            element.addEventListener("click", (event) => {
+                event.stopPropagation();
+                const newComment = prompt(
+                    "Kommentar bearbeiten. Leere Eingabe löscht die Markierung.",
+                    annotation.comment || ""
+                );
+
+                if (newComment === null) {
+                    return;
+                }
+
+                if (!newComment.trim()) {
+                    if (confirm("Soll die Markierung entfernt werden?")) {
+                        withJson(annotationDetailUrl(annotation.id), { method: "DELETE" })
+                            .then(() => element.remove())
+                            .catch(() => setStatus("Löschen der Markierung fehlgeschlagen."));
+                    }
+                    return;
+                }
+
+                withJson(annotationDetailUrl(annotation.id), {
+                    method: "PATCH",
+                    body: JSON.stringify({ comment: newComment.trim() }),
+                })
+                    .then((response) => response.json())
+                    .then((updated) => {
+                        annotation.comment = updated.comment;
+                        element.title = updated.comment || "Keine Notiz hinterlegt";
+                        label.textContent = updated.comment ? "💬" : "✏️";
+                    })
+                    .catch(() => setStatus("Speichern des Kommentars fehlgeschlagen."));
+            });
+
+            overlay.appendChild(element);
+        };
+
+        const saveAnnotation = (payload) =>
+            withJson(annotationsEndpoint, {
+                method: "POST",
+                body: JSON.stringify(payload),
+            }).then((response) => {
+                if (!response.ok) {
+                    throw new Error("Anfrage fehlgeschlagen");
+                }
+                return response.json();
+            });
+
+        const toggleDrawMode = (active) => {
+            drawMode = active;
+            toggleButton.classList.toggle("btn-primary", active);
+            toggleButton.classList.toggle("btn-outline-primary", !active);
+            toggleButton.textContent = active ? "Markierungsmodus aktiv" : "Markierung hinzufügen";
+            Object.values(overlays).forEach((overlay) =>
+                overlay.classList.toggle("draw-mode", active)
+            );
+            if (!active && selectionBox) {
+                selectionBox.remove();
+                selectionBox = null;
+            }
+        };
+
+        const attachOverlayEvents = (overlay, pageNumber) => {
+            overlay.addEventListener("mousedown", (event) => {
+                if (!drawMode) return;
+
+                const rect = overlay.getBoundingClientRect();
+                const startX = event.clientX - rect.left;
+                const startY = event.clientY - rect.top;
+
+                selectionBox = document.createElement("div");
+                selectionBox.className = "selection-rectangle";
+                selectionBox.style.left = `${startX}px`;
+                selectionBox.style.top = `${startY}px`;
+                overlay.appendChild(selectionBox);
+
+                const handleMove = (moveEvent) => {
+                    const currentX = moveEvent.clientX - rect.left;
+                    const currentY = moveEvent.clientY - rect.top;
+                    const left = Math.min(startX, currentX);
+                    const top = Math.min(startY, currentY);
+                    const width = Math.abs(currentX - startX);
+                    const height = Math.abs(currentY - startY);
+
+                    selectionBox.style.left = `${left}px`;
+                    selectionBox.style.top = `${top}px`;
+                    selectionBox.style.width = `${width}px`;
+                    selectionBox.style.height = `${height}px`;
+                };
+
+                const handleUp = () => {
+                    document.removeEventListener("mousemove", handleMove);
+                    document.removeEventListener("mouseup", handleUp);
+
+                    const width = parseFloat(selectionBox.style.width || "0");
+                    const height = parseFloat(selectionBox.style.height || "0");
+                    const left = parseFloat(selectionBox.style.left || "0");
+                    const top = parseFloat(selectionBox.style.top || "0");
+
+                    if (width < 5 || height < 5) {
+                        selectionBox.remove();
+                        selectionBox = null;
+                        return;
+                    }
+
+                    const comment = prompt("Kommentar für die Markierung (optional)", "");
+                    if (comment === null) {
+                        selectionBox.remove();
+                        selectionBox = null;
+                        return;
+                    }
+
+                    const payload = {
+                        page_number: pageNumber,
+                        x: left / overlay.clientWidth,
+                        y: top / overlay.clientHeight,
+                        width: width / overlay.clientWidth,
+                        height: height / overlay.clientHeight,
+                        comment: comment.trim(),
+                    };
+
+                    saveAnnotation(payload)
+                        .then((annotation) => {
+                            renderAnnotation(annotation);
+                            setStatus("Markierung gespeichert.");
+                        })
+                        .catch(() => setStatus("Speichern der Markierung fehlgeschlagen."))
+                        .finally(() => {
+                            if (selectionBox) selectionBox.remove();
+                            selectionBox = null;
+                            toggleDrawMode(false);
+                        });
+                };
+
+                document.addEventListener("mousemove", handleMove);
+                document.addEventListener("mouseup", handleUp);
+            });
+        };
+
+        const renderPage = async (page, pageNumber) => {
+            const unscaled = page.getViewport({ scale: 1 });
+            const containerWidth = pagesContainer.clientWidth || unscaled.width;
+            const scale = Math.min(1.5, containerWidth / unscaled.width);
+            const viewport = page.getViewport({ scale });
+
+            const pageWrapper = document.createElement("div");
+            pageWrapper.className = "pdf-page";
+            pageWrapper.style.width = `${viewport.width}px`;
+            pageWrapper.style.height = `${viewport.height}px`;
+
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            canvas.style.width = `${viewport.width}px`;
+            canvas.style.height = `${viewport.height}px`;
+
+            const overlay = document.createElement("div");
+            overlay.className = "annotation-layer";
+            overlay.style.width = `${viewport.width}px`;
+            overlay.style.height = `${viewport.height}px`;
+            attachOverlayEvents(overlay, pageNumber);
+            overlays[pageNumber] = overlay;
+
+            pageWrapper.appendChild(canvas);
+            pageWrapper.appendChild(overlay);
+            pagesContainer.appendChild(pageWrapper);
+
+            await page.render({
+                canvasContext: context,
+                viewport,
+            }).promise;
+        };
+
+        const loadDocument = async () => {
+            try {
+                const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
+                setStatus("PDF geladen. Seiten werden gerendert...");
+                for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+                    const page = await pdf.getPage(pageNumber);
+                    await renderPage(page, pageNumber);
+                }
+                setStatus("Markierungen werden geladen...");
+                const response = await fetch(annotationsEndpoint);
+                const data = await response.json();
+                (data.annotations || []).forEach(renderAnnotation);
+                setStatus("PDF bereit. Markierungen hinzufügen oder bearbeiten.");
+            } catch (error) {
+                console.error(error);
+                setStatus("PDF konnte nicht geladen werden.");
+            }
+        };
+
+        toggleButton.addEventListener("click", () => toggleDrawMode(!drawMode));
+        loadDocument();
+    });
+</script>
+{% endif %}
 {% endblock %}
