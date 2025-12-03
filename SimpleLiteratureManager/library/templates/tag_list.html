@@ -17,7 +17,7 @@
             <tbody>
                 {% for tag in tags %}
                 <tr>
-                    <td>{{ tag.name }}</td>
+                    <td><a href="{% url 'tag_detail' tag.id %}">{{ tag.name }}</a></td>
                     <td data-value="{{ tag.publication_count }}">{{ tag.publication_count }}</td>
                 </tr>
                 {% empty %}

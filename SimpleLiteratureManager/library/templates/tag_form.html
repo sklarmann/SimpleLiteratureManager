@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1>Tag hinzufügen</h1>
+<h1>{% if is_edit %}Tag bearbeiten{% else %}Tag hinzufügen{% endif %}</h1>
 
 <form method="POST" class="mt-3">
     {% csrf_token %}
@@ -9,10 +9,17 @@
     <div class="mb-3">
         {{ form.name.label_tag }}
         {{ form.name }}
+        {% for error in form.name.errors %}
+            <div class="text-danger small">{{ error }}</div>
+        {% endfor %}
     </div>
 
-    <button class="btn btn-primary" type="submit">Speichern</button>
-    <a class="btn btn-secondary" href="{% url 'tag_list' %}">Abbrechen</a>
+    <button class="btn btn-primary" type="submit">{% if is_edit %}Aktualisieren{% else %}Speichern{% endif %}</button>
+    {% if is_edit %}
+        <a class="btn btn-secondary" href="{% url 'tag_detail' tag.id %}">Abbrechen</a>
+    {% else %}
+        <a class="btn btn-secondary" href="{% url 'tag_list' %}">Abbrechen</a>
+    {% endif %}
 </form>
 
 {% endblock %}

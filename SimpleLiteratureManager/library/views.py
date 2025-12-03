@@ -125,6 +125,19 @@ def tag_list(request):
     return render(request, "tag_list.html", {"tags": tags})
 
 
+def tag_detail(request, pk):
+    tag = get_object_or_404(
+        Tag.objects.prefetch_related(
+            "publications__authors", "publications__journal", "publications__tags"
+        ),
+        pk=pk,
+    )
+    publications = (
+        tag.publications.select_related("journal").prefetch_related("authors", "tags")
+    )
+    return render(request, "tag_detail.html", {"tag": tag, "publications": publications})
+
+
 def tag_create(request):
     if request.method == "POST":
         form = TagForm(request.POST)
@@ -133,7 +146,22 @@ def tag_create(request):
             return redirect("tag_list")
     else:
         form = TagForm()
-    return render(request, "tag_form.html", {"form": form})
+    return render(request, "tag_form.html", {"form": form, "is_edit": False})
+
+
+def tag_update(request, pk):
+    tag = get_object_or_404(Tag, pk=pk)
+    if request.method == "POST":
+        form = TagForm(request.POST, instance=tag)
+        if form.is_valid():
+            form.save()
+            return redirect("tag_detail", pk=tag.pk)
+    else:
+        form = TagForm(instance=tag)
+
+    return render(
+        request, "tag_form.html", {"form": form, "is_edit": True, "tag": tag}
+    )
 
 
 def journal_create(request):

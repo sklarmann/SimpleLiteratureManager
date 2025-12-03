@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="mb-0">{{ tag.name }}</h1>
+        <p class="mb-0 text-muted">Tagdetails</p>
+    </div>
+    <a class="btn btn-primary" href="{% url 'tag_update' tag.id %}">Bearbeiten</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body p-0">
+        <div class="p-3 border-bottom">
+            <h5 class="mb-0">Publikationen</h5>
+        </div>
+        {% if publications|length %}
+        <div class="table-responsive">
+            <table class="table mb-0 sortable">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col" data-sort="number">Jahr</th>
+                        <th scope="col" data-sort="text">Titel</th>
+                        <th scope="col" data-sort="text">Autoren</th>
+                        <th scope="col" data-sort="text">Tags</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for publication in publications %}
+                    <tr>
+                        <td data-value="{{ publication.year }}">{{ publication.year }}</td>
+                        <td>
+                            <a href="{% url 'publication_detail' publication.id %}">{{ publication.title }}</a>
+                        </td>
+                        <td>
+                            {% if publication.authors.all|length %}
+                                {% for author in publication.authors.all %}
+                                    <a href="{% url 'author_detail' author.id %}">{{ author }}</a>{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                &mdash;
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if publication.tags.all|length %}
+                                {% for publication_tag in publication.tags.all %}
+                                    <a href="{% url 'tag_detail' publication_tag.id %}" class="badge bg-secondary me-1">{{ publication_tag.name }}</a>
+                                {% endfor %}
+                            {% else %}
+                                &mdash;
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted px-3 py-4 mb-0">Keine Publikationen zugeordnet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<a class="btn btn-secondary" href="{% url 'tag_list' %}">Zurück zur Liste</a>
+{% endblock %}
