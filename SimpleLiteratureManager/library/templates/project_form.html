@@ -23,8 +23,33 @@
 
     <div class="mb-3">
         {{ form.publications.label_tag }}
-        {{ form.publications }}
-        <div class="form-text">Halte Strg (oder Cmd auf Mac), um mehrere Publikationen auszuwählen.</div>
+        <div class="row g-2 align-items-start">
+            <div class="col-md-5">
+                <label for="available-publications" class="form-label">Alle Publikationen</label>
+                <input
+                    type="text"
+                    id="publication-filter"
+                    class="form-control mb-2"
+                    placeholder="Publikationen filtern"
+                />
+                <select multiple class="form-select" size="10" id="available-publications"></select>
+            </div>
+            <div class="col-md-2 d-flex flex-column align-items-center justify-content-center gap-2">
+                <button type="button" class="btn btn-outline-primary w-100" id="add-publication">
+                    Hinzufügen &raquo;
+                </button>
+                <button type="button" class="btn btn-outline-secondary w-100" id="remove-publication">
+                    &laquo; Entfernen
+                </button>
+            </div>
+            <div class="col-md-5">
+                <label for="selected-publications" class="form-label">Zugeordnete Publikationen</label>
+                <select multiple class="form-select" size="12" id="selected-publications"></select>
+            </div>
+        </div>
+        <div class="d-none">
+            {{ form.publications }}
+        </div>
         {% for error in form.publications.errors %}
             <div class="text-danger small">{{ error }}</div>
         {% endfor %}
@@ -37,4 +62,86 @@
         <a class="btn btn-secondary" href="{% url 'project_list' %}">Abbrechen</a>
     {% endif %}
 </form>
+
+<script>
+    (function () {
+        const setupDualList = ({
+            hiddenSelectId,
+            availableSelectId,
+            selectedSelectId,
+            filterInputId,
+            addButtonId,
+            removeButtonId,
+        }) => {
+            const hiddenSelect = document.getElementById(hiddenSelectId);
+            const availableSelect = document.getElementById(availableSelectId);
+            const selectedSelect = document.getElementById(selectedSelectId);
+            const filterInput = document.getElementById(filterInputId);
+            const addButton = document.getElementById(addButtonId);
+            const removeButton = document.getElementById(removeButtonId);
+
+            if (!hiddenSelect || !availableSelect || !selectedSelect) {
+                return;
+            }
+
+            const allOptions = Array.from(hiddenSelect.options).map((option) => option.cloneNode(true));
+
+            const renderLists = () => {
+                availableSelect.innerHTML = "";
+                selectedSelect.innerHTML = "";
+
+                const filterValue = filterInput?.value.toLowerCase() || "";
+
+                allOptions.forEach((option) => {
+                    const targetSelect = option.selected ? selectedSelect : availableSelect;
+                    const matchesFilter = option.text.toLowerCase().includes(filterValue);
+
+                    if (!option.selected && filterValue && !matchesFilter) {
+                        return;
+                    }
+
+                    targetSelect.appendChild(option.cloneNode(true));
+                });
+            };
+
+            const moveOptions = (fromSelect, markSelected) => {
+                const selectedOptions = Array.from(fromSelect.selectedOptions);
+                if (!selectedOptions.length) {
+                    return;
+                }
+
+                selectedOptions.forEach((option) => {
+                    const original = allOptions.find((opt) => opt.value === option.value);
+                    if (original) {
+                        original.selected = markSelected;
+                    }
+                });
+                renderLists();
+            };
+
+            addButton?.addEventListener("click", () => moveOptions(availableSelect, true));
+            removeButton?.addEventListener("click", () => moveOptions(selectedSelect, false));
+            filterInput?.addEventListener("input", renderLists);
+
+            document.querySelector("form")?.addEventListener("submit", () => {
+                Array.from(hiddenSelect.options).forEach((option) => {
+                    option.selected = allOptions.some(
+                        (opt) => opt.value === option.value && opt.selected,
+                    );
+                });
+            });
+
+            renderLists();
+        };
+
+        setupDualList({
+            hiddenSelectId: "id_publications",
+            availableSelectId: "available-publications",
+            selectedSelectId: "selected-publications",
+            filterInputId: "publication-filter",
+            addButtonId: "add-publication",
+            removeButtonId: "remove-publication",
+        });
+    })();
+</script>
 {% endblock %}
