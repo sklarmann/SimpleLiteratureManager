@@ -109,8 +109,12 @@ def author_duplicates(request):
 
 
 def journal_list(request):
-    journals = Journal.objects.all()
-    return render(request, "journal_list.html", {"journals": journals})
+    publications = (
+        Publication.objects.select_related("journal")
+        .prefetch_related("authors", "tags")
+        .order_by("-year", "title")
+    )
+    return render(request, "journal_list.html", {"publications": publications})
 
 
 def tag_list(request):
