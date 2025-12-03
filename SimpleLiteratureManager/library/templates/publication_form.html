@@ -30,9 +30,42 @@
         {% endfor %}
     </div>
 
-    <div class="mb-3">
-        {{ form.authors.label_tag }}
-        {{ form.authors }}
+    {{ author_choices|json_script:"author-choices" }}
+    {{ selected_authors|json_script:"selected-authors" }}
+    <div class="mb-3" x-data="authorPicker()" x-init="init()">
+        <label class="form-label">{{ form.authors.label }}</label>
+        <div class="d-none" aria-hidden="true">
+            {{ form.authors.as_widget(attrs={"x-ref": "authorSelect", "class": "d-none"}) }}
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mb-2">
+            <template x-for="author in selectedAuthors" :key="author.id">
+                <span class="badge bg-primary d-flex align-items-center gap-2 py-2 px-3">
+                    <span x-text="authorLabel(author)"></span>
+                    <button type="button" class="btn-close btn-close-white btn-sm" aria-label="Autor entfernen" @click="remove(author.id)"></button>
+                </span>
+            </template>
+            <span x-show="selectedAuthors.length === 0" class="text-muted">Keine Autoren ausgewählt</span>
+        </div>
+
+        <div class="input-group mb-2">
+            <input type="text" class="form-control" placeholder="Autor suchen" x-model="query" aria-label="Autor suchen">
+            <button class="btn btn-outline-secondary" type="button" @click="resetSearch()">Zurücksetzen</button>
+        </div>
+
+        <div class="border rounded" x-show="filteredAuthors.length" x-cloak>
+            <ul class="list-group list-group-flush">
+                <template x-for="author in filteredAuthors" :key="author.id">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span x-text="authorLabel(author)"></span>
+                        <button type="button" class="btn btn-sm" :class="isSelected(author.id) ? 'btn-outline-secondary' : 'btn-primary'" @click="toggle(author.id)">
+                            <span x-text="isSelected(author.id) ? 'Entfernen' : 'Hinzufügen'"></span>
+                        </button>
+                    </li>
+                </template>
+            </ul>
+        </div>
+
         {% for error in form.authors.errors %}
             <div class="text-danger small">{{ error }}</div>
         {% endfor %}
@@ -77,5 +110,59 @@
         <a class="btn btn-secondary" href="{% url 'publication_list' %}">Abbrechen</a>
     {% endif %}
 </form>
+
+<script>
+    document.addEventListener("alpine:init", () => {
+        Alpine.data("authorPicker", () => ({
+            allAuthors: JSON.parse(document.getElementById("author-choices").textContent || "[]"),
+            selectedIds: JSON.parse(document.getElementById("selected-authors").textContent || "[]"),
+            query: "",
+            init() {
+                this.syncSelect();
+            },
+            get selectedAuthors() {
+                return this.allAuthors.filter((author) => this.selectedIds.includes(author.id));
+            },
+            get filteredAuthors() {
+                const term = this.query.trim().toLowerCase();
+                return this.allAuthors
+                    .filter((author) => {
+                        const label = this.authorLabel(author).toLowerCase();
+                        return !term || label.includes(term);
+                    })
+                    .sort((a, b) => this.authorLabel(a).localeCompare(this.authorLabel(b), "de"));
+            },
+            authorLabel(author) {
+                return `${author.last_name}, ${author.first_name}`.trim();
+            },
+            isSelected(id) {
+                return this.selectedIds.includes(id);
+            },
+            toggle(id) {
+                if (this.isSelected(id)) {
+                    this.selectedIds = this.selectedIds.filter((value) => value !== id);
+                } else {
+                    this.selectedIds = [...this.selectedIds, id];
+                }
+                this.syncSelect();
+            },
+            remove(id) {
+                this.selectedIds = this.selectedIds.filter((value) => value !== id);
+                this.syncSelect();
+            },
+            resetSearch() {
+                this.query = "";
+            },
+            syncSelect() {
+                const select = this.$refs.authorSelect;
+                if (!select) return;
+                Array.from(select.options).forEach((option) => {
+                    const value = parseInt(option.value, 10);
+                    option.selected = this.selectedIds.includes(value);
+                });
+            },
+        }));
+    });
+</script>
 
 {% endblock %}

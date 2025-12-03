@@ -144,7 +144,11 @@ def publication_create(request):
             return redirect("publication_list")
     else:
         form = PublicationForm()
-    return render(request, "publication_form.html", {"form": form, "is_edit": False})
+    return render(
+        request,
+        "publication_form.html",
+        _publication_form_context(form=form, is_edit=False),
+    )
 
 
 def publication_detail(request, pk):
@@ -168,8 +172,25 @@ def publication_update(request, pk):
     return render(
         request,
         "publication_form.html",
-        {"form": form, "publication": publication, "is_edit": True},
+        _publication_form_context(
+            form=form, publication=publication, is_edit=True
+        ),
     )
+
+
+def _publication_form_context(*, form, is_edit, publication=None):
+    selected_authors = form["authors"].value() or []
+    author_choices = list(
+        form.fields["authors"].queryset.values("id", "first_name", "last_name")
+    )
+
+    return {
+        "form": form,
+        "publication": publication,
+        "is_edit": is_edit,
+        "author_choices": author_choices,
+        "selected_authors": [int(author_id) for author_id in selected_authors],
+    }
 
 
 def _extract_year(message):
