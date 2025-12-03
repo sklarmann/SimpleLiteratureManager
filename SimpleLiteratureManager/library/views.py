@@ -4,12 +4,12 @@ from itertools import combinations
 import re
 
 import requests
-from django.db import transaction
+from django.db import models, transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.html import strip_tags
 
 from .forms import AuthorForm, DoiImportForm, JournalForm, PublicationForm
-from .models import Author, Journal, Publication
+from .models import Author, Journal, Publication, Tag
 
 def author_list(request):
     authors = Author.objects.all()
@@ -113,6 +113,11 @@ def journal_list(request):
     return render(request, "journal_list.html", {"journals": journals})
 
 
+def tag_list(request):
+    tags = Tag.objects.annotate(publication_count=models.Count("publications"))
+    return render(request, "tag_list.html", {"tags": tags})
+
+
 def journal_create(request):
     if request.method == "POST":
         form = JournalForm(request.POST)
@@ -124,7 +129,10 @@ def journal_create(request):
     return render(request, "journal_form.html", {"form": form})
 
 def publication_list(request):
-    publications = Publication.objects.select_related("journal").prefetch_related("authors")
+    publications = (
+        Publication.objects.select_related("journal")
+        .prefetch_related("authors", "tags")
+    )
     return render(request, "publication_list.html", {"publications": publications})
 
 
@@ -141,7 +149,7 @@ def publication_create(request):
 
 def publication_detail(request, pk):
     publication = get_object_or_404(
-        Publication.objects.select_related("journal").prefetch_related("authors"),
+        Publication.objects.select_related("journal").prefetch_related("authors", "tags"),
         pk=pk,
     )
     return render(request, "publication_detail.html", {"publication": publication})

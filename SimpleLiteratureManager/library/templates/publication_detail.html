@@ -26,6 +26,17 @@
                 {% endif %}
             </dd>
 
+            <dt class="col-sm-3">Tags</dt>
+            <dd class="col-sm-9">
+                {% if publication.tags.all|length %}
+                    {% for tag in publication.tags.all %}
+                        <span class="badge bg-secondary me-1">{{ tag.name }}</span>
+                    {% endfor %}
+                {% else %}
+                    -
+                {% endif %}
+            </dd>
+
             <dt class="col-sm-3">DOI</dt>
             <dd class="col-sm-9">{{ publication.doi|default_if_none:"-" }}</dd>
 

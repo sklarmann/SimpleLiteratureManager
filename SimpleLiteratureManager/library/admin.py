@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Author, Journal, Publication
+from .models import Author, Journal, Publication, Tag
 
 @admin.register(Author)
 class AuthorAdmin(admin.ModelAdmin):
@@ -16,6 +16,12 @@ class JournalAdmin(admin.ModelAdmin):
 @admin.register(Publication)
 class PublicationAdmin(admin.ModelAdmin):
     list_display = ("title", "year", "journal")
-    list_filter = ("year", "journal")
+    list_filter = ("year", "journal", "tags")
     search_fields = ("title", "doi")
-    filter_horizontal = ("authors",)
+    filter_horizontal = ("authors", "tags")
+
+
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+    search_fields = ("name",)

@@ -15,6 +15,7 @@ urlpatterns = [
     path("authors/<int:pk>/delete/", views.author_delete, name="author_delete"),
     path("journals/", views.journal_list, name="journal_list"),
     path("journals/add/", views.journal_create, name="journal_create"),
+    path("tags/", views.tag_list, name="tag_list"),
     path("publications/", views.publication_list, name="publication_list"),
     path("publications/add/", views.publication_create, name="publication_create"),
     path("publications/<int:pk>/", views.publication_detail, name="publication_detail"),

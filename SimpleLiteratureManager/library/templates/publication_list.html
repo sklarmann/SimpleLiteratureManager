@@ -14,6 +14,13 @@
         Autoren: {{ p.authors.all|join:", " }}<br>
         Journal: {{ p.journal }}<br>
         {% if p.doi %}DOI: {{ p.doi }}<br>{% endif %}
+        {% if p.tags.all|length %}
+            <div class="mt-2">
+                {% for tag in p.tags.all %}
+                    <span class="badge bg-secondary me-1">{{ tag.name }}</span>
+                {% endfor %}
+            </div>
+        {% endif %}
         {% if p.pdf %}
             <a href="{{ p.pdf.url }}" class="btn btn-sm btn-outline-primary mt-2">PDF öffnen</a>
         {% endif %}

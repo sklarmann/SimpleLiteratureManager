@@ -47,6 +47,14 @@
     </div>
 
     <div class="mb-3">
+        {{ form.tags.label_tag }}
+        {{ form.tags }}
+        {% for error in form.tags.errors %}
+            <div class="text-danger small">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
         {{ form.abstract.label_tag }}
         {{ form.abstract }}
         {% for error in form.abstract.errors %}

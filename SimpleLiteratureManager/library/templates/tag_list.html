@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Tags</h1>
+
+<div class="card">
+    <div class="card-body p-0">
+        <table class="table mb-0 sortable">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col" data-sort="text">Name</th>
+                    <th scope="col" data-sort="number">Publikationen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tag in tags %}
+                <tr>
+                    <td>{{ tag.name }}</td>
+                    <td data-value="{{ tag.publication_count }}">{{ tag.publication_count }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="2" class="text-center text-muted py-3">Noch keine Tags vorhanden.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

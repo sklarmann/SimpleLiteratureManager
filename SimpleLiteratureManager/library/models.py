@@ -26,6 +26,16 @@ class Journal(models.Model):
         return self.name
 
 
+class Tag(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
 class Publication(models.Model):
     title = models.CharField(max_length=500)
     year = models.PositiveIntegerField()
@@ -33,6 +43,7 @@ class Publication(models.Model):
 
     authors = models.ManyToManyField(Author, related_name="publications")
     journal = models.ForeignKey(Journal, on_delete=models.SET_NULL, null=True, blank=True)
+    tags = models.ManyToManyField(Tag, related_name="publications", blank=True)
 
     abstract = models.TextField(blank=True, null=True)
     pdf = models.FileField(upload_to="publications/", blank=True, null=True)

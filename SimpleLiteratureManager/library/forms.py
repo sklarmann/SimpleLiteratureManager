@@ -1,5 +1,5 @@
 from django import forms
-from .models import Author, Journal, Publication
+from .models import Author, Journal, Publication, Tag
 
 class AuthorForm(forms.ModelForm):
     class Meta:
@@ -16,10 +16,20 @@ class JournalForm(forms.ModelForm):
 class PublicationForm(forms.ModelForm):
     class Meta:
         model = Publication
-        fields = ["title", "year", "doi", "authors", "journal", "abstract", "pdf"]
+        fields = [
+            "title",
+            "year",
+            "doi",
+            "authors",
+            "journal",
+            "tags",
+            "abstract",
+            "pdf",
+        ]
         widgets = {
             "authors": forms.SelectMultiple(attrs={"class": "form-select"}),
             "journal": forms.Select(attrs={"class": "form-select"}),
+            "tags": forms.SelectMultiple(attrs={"class": "form-select"}),
             "year": forms.NumberInput(attrs={"class": "form-control"}),
             "title": forms.TextInput(attrs={"class": "form-control"}),
             "doi": forms.TextInput(attrs={"class": "form-control"}),
