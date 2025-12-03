@@ -32,7 +32,33 @@
 
     <div class="mb-3">
         {{ form.authors.label_tag }}
-        {{ form.authors }}
+        <div class="row g-2 align-items-start">
+            <div class="col-md-5">
+                <label for="available-authors" class="form-label">Alle Autoren</label>
+                <input
+                    type="text"
+                    id="author-filter"
+                    class="form-control mb-2"
+                    placeholder="Autoren filtern"
+                />
+                <select multiple class="form-select" size="10" id="available-authors"></select>
+            </div>
+            <div class="col-md-2 d-flex flex-column align-items-center justify-content-center gap-2">
+                <button type="button" class="btn btn-outline-primary w-100" id="add-author">
+                    Hinzufügen &raquo;
+                </button>
+                <button type="button" class="btn btn-outline-secondary w-100" id="remove-author">
+                    &laquo; Entfernen
+                </button>
+            </div>
+            <div class="col-md-5">
+                <label for="selected-authors" class="form-label">Zugeordnete Autoren</label>
+                <select multiple class="form-select" size="12" id="selected-authors"></select>
+            </div>
+        </div>
+        <div class="d-none">
+            {{ form.authors }}
+        </div>
         {% for error in form.authors.errors %}
             <div class="text-danger small">{{ error }}</div>
         {% endfor %}
@@ -77,5 +103,67 @@
         <a class="btn btn-secondary" href="{% url 'publication_list' %}">Abbrechen</a>
     {% endif %}
 </form>
+
+<script>
+    (function () {
+        const hiddenSelect = document.getElementById("id_authors");
+        const availableSelect = document.getElementById("available-authors");
+        const selectedSelect = document.getElementById("selected-authors");
+        const filterInput = document.getElementById("author-filter");
+        const addButton = document.getElementById("add-author");
+        const removeButton = document.getElementById("remove-author");
+
+        if (!hiddenSelect) {
+            return;
+        }
+
+        const allOptions = Array.from(hiddenSelect.options).map((option) => option.cloneNode(true));
+
+        const renderLists = () => {
+            availableSelect.innerHTML = "";
+            selectedSelect.innerHTML = "";
+
+            const filterValue = filterInput.value.toLowerCase();
+
+            allOptions.forEach((option) => {
+                const targetSelect = option.selected ? selectedSelect : availableSelect;
+                const matchesFilter = option.text.toLowerCase().includes(filterValue);
+
+                if (!option.selected && filterValue && !matchesFilter) {
+                    return;
+                }
+
+                targetSelect.appendChild(option.cloneNode(true));
+            });
+        };
+
+        const moveOptions = (fromSelect, toSelect, markSelected) => {
+            const selectedOptions = Array.from(fromSelect.selectedOptions);
+            if (!selectedOptions.length) {
+                return;
+            }
+
+            selectedOptions.forEach((option) => {
+                const original = allOptions.find((opt) => opt.value === option.value);
+                if (original) {
+                    original.selected = markSelected;
+                }
+            });
+            renderLists();
+        };
+
+        addButton?.addEventListener("click", () => moveOptions(availableSelect, selectedSelect, true));
+        removeButton?.addEventListener("click", () => moveOptions(selectedSelect, availableSelect, false));
+        filterInput?.addEventListener("input", renderLists);
+
+        document.querySelector("form")?.addEventListener("submit", () => {
+            Array.from(hiddenSelect.options).forEach((option) => {
+                option.selected = allOptions.some((opt) => opt.value === option.value && opt.selected);
+            });
+        });
+
+        renderLists();
+    })();
+</script>
 
 {% endblock %}
