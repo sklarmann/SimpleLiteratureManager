@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>PDF Viewer</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf_viewer.min.css" integrity="sha512-l6B9YmxW60FiWKi7f3wM3iuWqOZL4hYi1v60KkVpkL25gcugjwZlXdz7IddJf8K34MKV6TkUc7Fd52z3k9ewfg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="./pdf_viewer.min.css">
     <style>
         :root {
             color-scheme: light;
@@ -40,17 +40,19 @@
 </header>
 <div id="viewerContainer" class="pdfViewer"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.min.js" integrity="sha512-kdCWMoJ4gL5NjjpwJ5qhDhEewVTIcX9Y4DJ5PCHpTkJAKZ/4QqXGzgm5jP5qwRCiXLwg8O7yaBV02pzDvaq4aw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf_viewer.min.js" integrity="sha512-5ot54WzXcfR1pJZS7c7p3hktVPK0D+SdNhlmD3dAGQX5RzoFY3OVuVv7b+whTYMEwwKYnr9uA3iZMNLuALcg8Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="./pdf.min.js"></script>
+<script src="./pdf_viewer.min.js"></script>
 <script>
     const url = new URL(window.location.href);
     const pdfUrl = url.searchParams.get("file");
     const container = document.getElementById("viewerContainer");
 
-    if (!pdfUrl) {
+    if (typeof pdfjsLib === "undefined" || typeof pdfjsViewer === "undefined") {
+        container.innerHTML = "<p style='padding:1rem'>PDF.js Assets nicht gefunden. Bitte legen Sie die PDF.js-Build-Dateien (pdf.min.js, pdf.worker.min.js, pdf_viewer.min.js und pdf_viewer.min.css) unter <code>static/pdfjs</code> ab.</p>";
+    } else if (!pdfUrl) {
         container.innerHTML = "<p style='padding:1rem'>Keine PDF angegeben.</p>";
     } else {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.worker.min.js";
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "./pdf.worker.min.js";
 
         const eventBus = new pdfjsViewer.EventBus();
         const linkService = new pdfjsViewer.PDFLinkService({ eventBus });
