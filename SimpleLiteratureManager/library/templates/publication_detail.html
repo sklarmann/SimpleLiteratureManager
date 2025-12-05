@@ -84,8 +84,8 @@
 <a class="btn btn-secondary" href="{% url 'publication_list' %}">Zurück zur Liste</a>
 
 {% if publication.pdf %}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha512-4QoUpbQ0eI9PpcFssALuPKMNstmMi0DzsY+q6nYBa1BTzcAaSHWs8bqVON1gnSF9cmjIEAkv2kDuv+NTAPM1gw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.js" integrity="sha512-0ovjV+JhpMKma/VmjjcVkL/v+vjXVnlekhis8nHM9bSio81taGp7L0RloAsu9lnzIEcQVzNA+A9qHvEc/eUaSw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.js" integrity="sha512-r/1hgDCXmxicFJ66QCjMCFl0dEhTBu7kYqoef3OrdHbqrnyhp1V/GhyWQg8Gto8412MUqU8AbMSpc5TLbRURhQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="{% static 'library/js/publication_pdf_viewer.js' %}"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
