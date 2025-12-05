@@ -695,21 +695,23 @@ def author_merge(request, primary_id, duplicate_id):
                         publication=publication, author=target
                     ).first()
 
+                    # If the target author is not linked yet, reuse the duplicate link
+                    # by switching its author. This avoids violating the unique
+                    # (publication, position) constraint while preserving ordering.
                     if existing_link is None:
-                        PublicationAuthor.objects.create(
-                            publication=publication,
-                            author=target,
-                            position=duplicate_link.position,
-                        )
-                    else:
-                        desired_position = min(
-                            existing_link.position, duplicate_link.position
-                        )
-                        if existing_link.position != desired_position:
-                            existing_link.position = desired_position
-                            existing_link.save(update_fields=["position"])
+                        duplicate_link.author = target
+                        duplicate_link.save(update_fields=["author"])
+                        continue
 
-                    duplicate_link.delete()
+                    # When both authors are linked, keep the earlier of the two positions
+                    # without introducing duplicate positions.
+                    if duplicate_link.position < existing_link.position:
+                        target_position = duplicate_link.position
+                        duplicate_link.delete()
+                        existing_link.position = target_position
+                        existing_link.save(update_fields=["position"])
+                    else:
+                        duplicate_link.delete()
 
                 for publication in touched_publications:
                     publication.generate_bibtex_key(force=True)
