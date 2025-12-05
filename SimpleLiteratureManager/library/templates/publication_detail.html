@@ -61,6 +61,9 @@
             <dt class="col-sm-3">DOI</dt>
             <dd class="col-sm-9">{{ publication.doi|default_if_none:"-" }}</dd>
 
+            <dt class="col-sm-3">BibTeX-ID</dt>
+            <dd class="col-sm-9">{{ publication.bibtex_key }}</dd>
+
             <dt class="col-sm-3">Abstract</dt>
             <dd class="col-sm-9">{{ publication.abstract|default_if_none:"-" }}</dd>
         </dl>

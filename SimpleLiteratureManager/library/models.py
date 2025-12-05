@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models.signals import m2m_changed
+from django.dispatch import receiver
 
 class Author(models.Model):
     first_name = models.CharField(max_length=100)
@@ -71,12 +73,51 @@ class Publication(models.Model):
 
     abstract = models.TextField(blank=True, null=True)
     pdf = models.FileField(upload_to="publications/", blank=True, null=True)
+    bibtex_key = models.CharField(max_length=255, unique=True, blank=True, editable=False)
 
     class Meta:
         ordering = ["-year", "title"]
 
+    def save(self, *args, **kwargs):
+        should_generate = not self.bibtex_key
+        if self.pk and not should_generate:
+            existing = Publication.objects.filter(pk=self.pk).only("year").first()
+            if existing and existing.year != self.year:
+                should_generate = True
+
+        if should_generate:
+            self.generate_bibtex_key(force=True)
+
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.title} ({self.year})"
+
+    def generate_bibtex_key(self, force=False):
+        if self.bibtex_key and not force:
+            return self.bibtex_key
+
+        from django.utils.text import slugify
+
+        first_author = self.authors.order_by("last_name", "first_name").first()
+        base_name = slugify(first_author.last_name) if first_author else "publication"
+        if not base_name:
+            base_name = "publication"
+
+        year_part = str(self.year or "")
+        candidate = f"{base_name}{year_part}"
+        suffix = 1
+
+        while (
+            Publication.objects.filter(bibtex_key=candidate)
+            .exclude(pk=self.pk)
+            .exists()
+        ):
+            suffix += 1
+            candidate = f"{base_name}{year_part}-{suffix}"
+
+        self.bibtex_key = candidate
+        return candidate
 
 
 class PublicationAnnotation(models.Model):
@@ -98,3 +139,10 @@ class PublicationAnnotation(models.Model):
 
     def __str__(self):
         return f"Annotation Seite {self.page_number} für {self.publication.title}"
+
+
+@receiver(m2m_changed, sender=Publication.authors.through)
+def refresh_bibtex_key_on_authors_change(sender, instance, action, **kwargs):
+    if action in {"post_add", "post_remove", "post_clear"}:
+        instance.generate_bibtex_key(force=True)
+        instance.save(update_fields=["bibtex_key"])

@@ -381,6 +381,7 @@ def publication_update_from_doi(request, pk):
                 author_instances.append(instance)
             publication.authors.set(author_instances)
 
+        publication.generate_bibtex_key(force=True)
         publication.save()
         return redirect("publication_detail", pk=publication.pk)
 
@@ -551,6 +552,9 @@ def publication_add_by_doi(request):
 
                     if author_instances:
                         publication.authors.set(author_instances)
+
+                    publication.generate_bibtex_key(force=True)
+                    publication.save(update_fields=["bibtex_key"])
 
                 return redirect("publication_list")
             except (requests.RequestException, ValueError) as exc:

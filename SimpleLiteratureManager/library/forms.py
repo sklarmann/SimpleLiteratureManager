@@ -54,6 +54,26 @@ class PublicationForm(forms.ModelForm):
             "pdf": forms.ClearableFileInput(attrs={"class": "form-control"}),
         }
 
+    def save(self, commit=True):
+        publication = super().save(commit=commit)
+
+        def refresh_bibtex_key():
+            publication.generate_bibtex_key(force=True)
+            publication.save(update_fields=["bibtex_key"])
+
+        if commit:
+            refresh_bibtex_key()
+        else:
+            original_save_m2m = self.save_m2m
+
+            def _save_m2m():
+                original_save_m2m()
+                refresh_bibtex_key()
+
+            self.save_m2m = _save_m2m
+
+        return publication
+
 
 class DoiImportForm(forms.Form):
     doi = forms.CharField(
