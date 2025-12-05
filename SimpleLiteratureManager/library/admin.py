@@ -27,7 +27,9 @@ class PublicationAdmin(admin.ModelAdmin):
     )
     list_filter = ("year", "journal", "tags", "publication_type")
     search_fields = ("title", "doi", "bibtex_key")
-    filter_horizontal = ("authors", "tags")
+    # The authors relationship uses an explicit through model for ordered authors,
+    # so it cannot be used with filter_horizontal.
+    filter_horizontal = ("tags",)
 
 
 @admin.register(PublicationAnnotation)
