@@ -31,6 +31,14 @@
     </div>
 
     <div class="mb-3">
+        {{ form.publication_type.label_tag }}
+        {{ form.publication_type }}
+        {% for error in form.publication_type.errors %}
+            <div class="text-danger small">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
         {{ form.authors.label_tag }}
         <div class="row g-2 align-items-start">
             <div class="col-md-5">
@@ -70,6 +78,27 @@
         {% for error in form.journal.errors %}
             <div class="text-danger small">{{ error }}</div>
         {% endfor %}
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="mb-3">
+                {{ form.volume.label_tag }}
+                {{ form.volume }}
+                {% for error in form.volume.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                {{ form.pages.label_tag }}
+                {{ form.pages }}
+                {% for error in form.pages.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 
     <div class="mb-3">

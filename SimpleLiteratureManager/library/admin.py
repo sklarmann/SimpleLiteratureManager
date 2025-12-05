@@ -16,8 +16,8 @@ class JournalAdmin(admin.ModelAdmin):
 
 @admin.register(Publication)
 class PublicationAdmin(admin.ModelAdmin):
-    list_display = ("title", "year", "journal")
-    list_filter = ("year", "journal", "tags")
+    list_display = ("title", "year", "publication_type", "journal", "volume", "pages")
+    list_filter = ("year", "journal", "tags", "publication_type")
     search_fields = ("title", "doi")
     filter_horizontal = ("authors", "tags")
 

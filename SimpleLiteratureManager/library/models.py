@@ -48,12 +48,24 @@ class Project(models.Model):
 
 
 class Publication(models.Model):
+    class PublicationType(models.TextChoices):
+        ARTICLE = "article", "Artikel"
+        PROCEEDINGS = "proceedings", "Proceedings"
+        BOOK = "book", "Buch"
+
     title = models.CharField(max_length=500)
     year = models.PositiveIntegerField()
     doi = models.CharField(max_length=255, blank=True, null=True)
+    publication_type = models.CharField(
+        max_length=20,
+        choices=PublicationType.choices,
+        default=PublicationType.ARTICLE,
+    )
 
     authors = models.ManyToManyField(Author, related_name="publications")
     journal = models.ForeignKey(Journal, on_delete=models.SET_NULL, null=True, blank=True)
+    volume = models.CharField(max_length=50, blank=True, null=True)
+    pages = models.CharField(max_length=50, blank=True, null=True)
     tags = models.ManyToManyField(Tag, related_name="publications", blank=True)
     projects = models.ManyToManyField(Project, related_name="publications", blank=True)
 
