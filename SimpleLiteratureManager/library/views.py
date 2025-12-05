@@ -696,17 +696,18 @@ def author_merge(request, primary_id, duplicate_id):
                     ).first()
 
                     if existing_link is None:
-                        max_position = (
-                            PublicationAuthor.objects.filter(publication=publication)
-                            .aggregate(models.Max("position"))
-                            .get("position__max")
-                            or 0
-                        )
                         PublicationAuthor.objects.create(
                             publication=publication,
                             author=target,
-                            position=max_position + 1,
+                            position=duplicate_link.position,
                         )
+                    else:
+                        desired_position = min(
+                            existing_link.position, duplicate_link.position
+                        )
+                        if existing_link.position != desired_position:
+                            existing_link.position = desired_position
+                            existing_link.save(update_fields=["position"])
 
                     duplicate_link.delete()
 
