@@ -61,7 +61,6 @@ class Migration(migrations.Migration):
                 ('abstract', models.TextField(blank=True, null=True)),
                 ('pdf', models.FileField(blank=True, null=True, upload_to='publications/')),
                 ('bibtex_key', models.CharField(blank=True, editable=False, max_length=255, unique=True)),
-                ('authors', models.ManyToManyField(related_name='publications', through='library.PublicationAuthor', to='library.author')),
                 ('journal', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='library.journal')),
                 ('projects', models.ManyToManyField(blank=True, related_name='publications', to='library.project')),
                 ('tags', models.ManyToManyField(blank=True, related_name='publications', to='library.tag')),
@@ -102,5 +101,10 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name='publicationauthor',
             constraint=models.UniqueConstraint(fields=('publication', 'position'), name='unique_publication_author_position'),
+        ),
+        migrations.AddField(
+            model_name='publication',
+            name='authors',
+            field=models.ManyToManyField(related_name='publications', through='library.PublicationAuthor', to='library.author'),
         ),
     ]
