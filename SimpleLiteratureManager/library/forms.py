@@ -66,45 +66,49 @@ class PublicationForm(forms.ModelForm):
                 str(author_id) for author_id in ordered_ids
             )
 
-    def save(self, commit=True):
-        publication = super().save(commit=commit)
+    def _ordered_authors_from_cleaned(self):
+        order_raw = self.cleaned_data.get("authors_order") or ""
+        order_ids = [int(value) for value in order_raw.split(",") if value.strip().isdigit()]
 
-        def refresh_bibtex_key():
+        selected_authors = list(self.cleaned_data.get("authors", []))
+        selected_lookup = {author.pk: author for author in selected_authors}
+
+        ordered_authors = [
+            selected_lookup[author_id]
+            for author_id in order_ids
+            if author_id in selected_lookup
+        ]
+
+        remaining = [
+            author for author in selected_authors if author.pk not in order_ids
+        ]
+
+        if not ordered_authors and self.instance.pk:
+            ordered_authors = list(self.instance.ordered_authors)
+
+        ordered_authors.extend(remaining)
+        return ordered_authors
+
+    def save(self, commit=True):
+        publication = super().save(commit=False)
+
+        def save_relations():
+            publication.save()
+            ordered_authors = self._ordered_authors_from_cleaned()
+            publication.set_authors_in_order(ordered_authors)
+
+            if "tags" in self.cleaned_data:
+                publication.tags.set(self.cleaned_data.get("tags", []))
+            if "projects" in self.cleaned_data:
+                publication.projects.set(self.cleaned_data.get("projects", []))
+
             publication.generate_bibtex_key(force=True)
             publication.save(update_fields=["bibtex_key"])
 
-        def apply_author_order():
-            order_raw = (
-                self.data.get("authors_order")
-                if self.is_bound
-                else self.cleaned_data.get("authors_order", "")
-            )
-            order_ids = [int(value) for value in order_raw.split(",") if value.strip().isdigit()]
-            authors_by_id = Author.objects.in_bulk(order_ids)
-            ordered_authors = [
-                authors_by_id[id_]
-                for id_ in order_ids
-                if id_ in authors_by_id
-            ]
-            if not ordered_authors and self.cleaned_data.get("authors"):
-                ordered_authors = list(self.cleaned_data["authors"])
-            elif not ordered_authors and self.instance.pk:
-                ordered_authors = list(self.instance.ordered_authors)
-
-            publication.set_authors_in_order(ordered_authors)
-
         if commit:
-            apply_author_order()
-            refresh_bibtex_key()
+            save_relations()
         else:
-            original_save_m2m = self.save_m2m
-
-            def _save_m2m():
-                original_save_m2m()
-                apply_author_order()
-                refresh_bibtex_key()
-
-            self.save_m2m = _save_m2m
+            self.save_m2m = save_relations
 
         return publication
 
