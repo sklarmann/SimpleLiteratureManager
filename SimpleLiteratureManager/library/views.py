@@ -20,7 +20,15 @@ from .forms import (
     PublicationForm,
     TagForm,
 )
-from .models import Author, Journal, Project, Publication, PublicationAnnotation, Tag
+from .models import (
+    Author,
+    Journal,
+    Project,
+    Publication,
+    PublicationAnnotation,
+    PublicationAuthor,
+    Tag,
+)
 
 
 AUTHOR_PREFETCH = Prefetch(
@@ -671,7 +679,40 @@ def author_merge(request, primary_id, duplicate_id):
 
         publications = other.publications.all()
         if publications.exists():
-            target.publications.add(*publications)
+            touched_publications = set()
+            with transaction.atomic():
+                for publication in publications:
+                    duplicate_link = PublicationAuthor.objects.filter(
+                        publication=publication, author=other
+                    ).first()
+
+                    if duplicate_link is None:
+                        continue
+
+                    touched_publications.add(publication)
+
+                    existing_link = PublicationAuthor.objects.filter(
+                        publication=publication, author=target
+                    ).first()
+
+                    if existing_link is None:
+                        max_position = (
+                            PublicationAuthor.objects.filter(publication=publication)
+                            .aggregate(models.Max("position"))
+                            .get("position__max")
+                            or 0
+                        )
+                        PublicationAuthor.objects.create(
+                            publication=publication,
+                            author=target,
+                            position=max_position + 1,
+                        )
+
+                    duplicate_link.delete()
+
+                for publication in touched_publications:
+                    publication.generate_bibtex_key(force=True)
+                    publication.save(update_fields=["bibtex_key"])
 
         other.delete()
 
