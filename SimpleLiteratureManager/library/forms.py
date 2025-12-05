@@ -67,7 +67,10 @@ class PublicationForm(forms.ModelForm):
             )
 
     def _ordered_authors_from_cleaned(self):
-        order_raw = self.cleaned_data.get("authors_order") or ""
+        order_raw = self.data.get("authors_order")
+        if order_raw is None:
+            order_raw = self.cleaned_data.get("authors_order") or ""
+
         order_ids = [int(value) for value in order_raw.split(",") if value.strip().isdigit()]
 
         selected_authors = list(self.cleaned_data.get("authors", []))
@@ -84,7 +87,11 @@ class PublicationForm(forms.ModelForm):
         ]
 
         if not ordered_authors and self.instance.pk:
-            ordered_authors = list(self.instance.ordered_authors)
+            ordered_authors = [
+                author
+                for author in self.instance.ordered_authors
+                if author.pk in selected_lookup
+            ]
 
         ordered_authors.extend(remaining)
         return ordered_authors
