@@ -1,85 +1,35 @@
 (function () {
     function initPublicationPdfViewer(options) {
         const { pdfUrl, workerSrc } = options || {};
-        const canvas = document.getElementById("pdf-canvas");
-        const pageInfo = document.getElementById("pdf-page-info");
-        const prevButton = document.getElementById("pdf-prev");
-        const nextButton = document.getElementById("pdf-next");
+        const viewerContainer = document.getElementById("pdf-viewer");
         const errorBox = document.getElementById("pdf-error");
 
-        if (!canvas || !pageInfo || !prevButton || !nextButton || !window.pdfjsLib || !pdfUrl) {
+        if (!viewerContainer || !window.pdfjsLib || !window.pdfjsViewer || !pdfUrl) {
             return;
         }
 
-        const container = canvas.parentElement;
-        const context = canvas.getContext("2d");
-        let pdfDoc = null;
-        let currentPage = 1;
-        let isRendering = false;
-        let pendingPage = null;
-
         pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
 
-        function updateControls(pageNumber, totalPages) {
-            pageInfo.textContent = `${pageNumber} / ${totalPages}`;
-            prevButton.disabled = pageNumber <= 1;
-            nextButton.disabled = pageNumber >= totalPages;
-        }
-
-        function renderPage(pageNumber) {
-            isRendering = true;
-            pdfDoc.getPage(pageNumber).then((page) => {
-                const viewport = page.getViewport({ scale: 1 });
-                const targetWidth = container.clientWidth || viewport.width;
-                const scale = targetWidth / viewport.width;
-                const scaledViewport = page.getViewport({ scale });
-
-                canvas.height = scaledViewport.height;
-                canvas.width = scaledViewport.width;
-
-                const renderContext = {
-                    canvasContext: context,
-                    viewport: scaledViewport,
-                };
-
-                const renderTask = page.render(renderContext);
-                renderTask.promise.then(() => {
-                    isRendering = false;
-                    updateControls(pageNumber, pdfDoc.numPages);
-                    if (pendingPage !== null) {
-                        renderPage(pendingPage);
-                        pendingPage = null;
-                    }
-                });
-            });
-        }
-
-        function queueRenderPage(pageNumber) {
-            if (isRendering) {
-                pendingPage = pageNumber;
-                return;
-            }
-            renderPage(pageNumber);
-        }
-
-        prevButton.addEventListener("click", () => {
-            if (currentPage <= 1) return;
-            currentPage -= 1;
-            queueRenderPage(currentPage);
+        const eventBus = new pdfjsViewer.EventBus();
+        const linkService = new pdfjsViewer.PDFLinkService({ eventBus });
+        const pdfViewer = new pdfjsViewer.PDFViewer({
+            container: viewerContainer,
+            eventBus,
+            linkService,
+            removePageBorders: true,
         });
 
-        nextButton.addEventListener("click", () => {
-            if (!pdfDoc || currentPage >= pdfDoc.numPages) return;
-            currentPage += 1;
-            queueRenderPage(currentPage);
+        linkService.setViewer(pdfViewer);
+
+        eventBus.on("pagesinit", () => {
+            pdfViewer.currentScaleValue = "page-width";
         });
 
         pdfjsLib
             .getDocument(pdfUrl)
             .promise.then((doc) => {
-                pdfDoc = doc;
-                updateControls(currentPage, pdfDoc.numPages);
-                renderPage(currentPage);
+                pdfViewer.setDocument(doc);
+                linkService.setDocument(doc, null);
             })
             .catch(() => {
                 if (errorBox) {

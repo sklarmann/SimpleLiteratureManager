@@ -63,20 +63,16 @@
 </div>
 
 {% if publication.pdf %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css" integrity="sha512-1fs/Hggsu2HrksBmbteKrYnb70SP3yjHfxcfTl1Pq1w3+sxCH/xUCFMJL8NfgKkLDGLcZ3uimJ5UJxdXXZSpzg==" crossorigin="anonymous" referrerpolicy="no-referrer">
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <span>PDF-Vorschau</span>
-        <div class="btn-group" role="group" aria-label="PDF Navigation">
-            <button id="pdf-prev" class="btn btn-outline-secondary btn-sm" type="button">Zurück</button>
-            <button id="pdf-next" class="btn btn-outline-secondary btn-sm" type="button">Weiter</button>
-            <span id="pdf-page-info" class="ms-2 small text-muted align-self-center">-</span>
-        </div>
+        <span>PDF</span>
     </div>
     <div class="card-body">
-        <div class="border rounded p-2" style="min-height: 200px;">
-            <canvas id="pdf-canvas" class="w-100"></canvas>
+        <div class="border rounded p-2" style="height: 800px; overflow: auto;">
+            <div id="pdf-viewer" class="pdfViewer"></div>
             <div id="pdf-error" class="alert alert-warning mt-3 d-none" role="alert">
-                Die PDF-Vorschau konnte nicht geladen werden.
+                Das PDF konnte nicht geladen werden.
             </div>
         </div>
     </div>
@@ -87,6 +83,7 @@
 
 {% if publication.pdf %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha512-4QoUpbQ0eI9PpcFssALuPKMNstmMi0DzsY+q6nYBa1BTzcAaSHWs8bqVON1gnSF9cmjIEAkv2kDuv+NTAPM1gw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.js" integrity="sha512-0ovjV+JhpMKma/VmjjcVkL/v+vjXVnlekhis8nHM9bSio81taGp7L0RloAsu9lnzIEcQVzNA+A9qHvEc/eUaSw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="{% static 'library/js/publication_pdf_viewer.js' %}"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function() {
