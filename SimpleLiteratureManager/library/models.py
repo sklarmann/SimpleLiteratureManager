@@ -143,6 +143,15 @@ class PublicationAnnotation(models.Model):
 
 @receiver(m2m_changed, sender=Publication.authors.through)
 def refresh_bibtex_key_on_authors_change(sender, instance, action, **kwargs):
-    if action in {"post_add", "post_remove", "post_clear"}:
-        instance.generate_bibtex_key(force=True)
-        instance.save(update_fields=["bibtex_key"])
+    if action not in {"post_add", "post_remove", "post_clear"}:
+        return
+
+    publications = []
+    if isinstance(instance, Publication):
+        publications = [instance]
+    elif hasattr(instance, "publications"):
+        publications = list(instance.publications.all())
+
+    for publication in publications:
+        publication.generate_bibtex_key(force=True)
+        publication.save(update_fields=["bibtex_key"])
