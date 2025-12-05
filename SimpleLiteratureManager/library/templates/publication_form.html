@@ -23,6 +23,14 @@
     </div>
 
     <div class="mb-3">
+        {{ form.publication_type.label_tag }}
+        {{ form.publication_type }}
+        {% for error in form.publication_type.errors %}
+            <div class="text-danger small">{{ error }}</div>
+        {% endfor %}
+    </div>
+
+    <div class="mb-3">
         {{ form.doi.label_tag }}
         {{ form.doi }}
         {% for error in form.doi.errors %}
@@ -70,6 +78,27 @@
         {% for error in form.journal.errors %}
             <div class="text-danger small">{{ error }}</div>
         {% endfor %}
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="mb-3">
+                {{ form.journal_volume.label_tag }}
+                {{ form.journal_volume }}
+                {% for error in form.journal_volume.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                {{ form.pages.label_tag }}
+                {{ form.pages }}
+                {% for error in form.pages.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 
     <div class="mb-3">

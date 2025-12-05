@@ -15,8 +15,17 @@
             <dt class="col-sm-3">Jahr</dt>
             <dd class="col-sm-9">{{ publication.year }}</dd>
 
+            <dt class="col-sm-3">Typ</dt>
+            <dd class="col-sm-9">{{ publication.get_publication_type_display }}</dd>
+
             <dt class="col-sm-3">Journal</dt>
             <dd class="col-sm-9">{{ publication.journal|default_if_none:"-" }}</dd>
+
+            <dt class="col-sm-3">Journal Volume</dt>
+            <dd class="col-sm-9">{{ publication.journal_volume|default_if_none:"-" }}</dd>
+
+            <dt class="col-sm-3">Seiten</dt>
+            <dd class="col-sm-9">{{ publication.pages|default_if_none:"-" }}</dd>
 
             <dt class="col-sm-3">Autoren</dt>
             <dd class="col-sm-9">
