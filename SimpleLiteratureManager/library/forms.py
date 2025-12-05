@@ -59,7 +59,7 @@ class PublicationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.instance.pk:
+        if self.instance.pk and not self.is_bound:
             ordered_ids = [author.pk for author in self.instance.ordered_authors]
             self.fields["authors"].initial = ordered_ids
             self.fields["authors_order"].initial = ",".join(
@@ -67,9 +67,9 @@ class PublicationForm(forms.ModelForm):
             )
 
     def _ordered_authors_from_cleaned(self):
-        order_raw = self.data.get("authors_order")
-        if order_raw is None:
-            order_raw = self.cleaned_data.get("authors_order") or ""
+        order_raw = (self.cleaned_data.get("authors_order") or "").strip()
+        if not order_raw:
+            order_raw = (self.data.get("authors_order") or "").strip()
 
         order_ids = [int(value) for value in order_raw.split(",") if value.strip().isdigit()]
 
@@ -96,13 +96,20 @@ class PublicationForm(forms.ModelForm):
         ordered_authors.extend(remaining)
         return ordered_authors
 
+    def clean(self):
+        cleaned_data = super().clean()
+        self._cleaned_ordered_authors = self._ordered_authors_from_cleaned()
+        return cleaned_data
+
     def save(self, commit=True):
         publication = super().save(commit=False)
 
+        ordered_authors = getattr(self, "_cleaned_ordered_authors", None)
+
         def save_relations():
             publication.save()
-            ordered_authors = self._ordered_authors_from_cleaned()
-            publication.set_authors_in_order(ordered_authors)
+            final_order = ordered_authors or self._ordered_authors_from_cleaned()
+            publication.set_authors_in_order(final_order)
 
             if "tags" in self.cleaned_data:
                 publication.tags.set(self.cleaned_data.get("tags", []))
