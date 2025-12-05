@@ -101,7 +101,9 @@ class Publication(models.Model):
 
         from django.utils.text import slugify
 
-        first_author = self.ordered_authors.first()
+        first_author = None
+        if self.pk:
+            first_author = self.ordered_authors.first()
         base_name = slugify(first_author.last_name) if first_author else "publication"
         if not base_name:
             base_name = "publication"
