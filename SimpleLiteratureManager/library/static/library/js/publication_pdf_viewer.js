@@ -1,10 +1,17 @@
 (function () {
     function initPublicationPdfViewer(options) {
         const { pdfUrl, workerSrc } = options || {};
-        const viewerContainer = document.getElementById("pdf-viewer");
+        const viewerContainer = document.getElementById("pdf-viewer-container");
+        const viewer = document.getElementById("pdf-viewer");
         const errorBox = document.getElementById("pdf-error");
 
-        if (!viewerContainer || !window.pdfjsLib || !window.pdfjsViewer || !pdfUrl) {
+        if (
+            !viewerContainer ||
+            !viewer ||
+            !window.pdfjsLib ||
+            !window.pdfjsViewer ||
+            !pdfUrl
+        ) {
             return;
         }
 
@@ -14,6 +21,7 @@
         const linkService = new pdfjsViewer.PDFLinkService({ eventBus });
         const pdfViewer = new pdfjsViewer.PDFViewer({
             container: viewerContainer,
+            viewer,
             eventBus,
             linkService,
             removePageBorders: true,
