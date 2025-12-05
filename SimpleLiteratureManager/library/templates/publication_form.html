@@ -220,6 +220,7 @@
             removeButtonId,
             moveUpButtonId,
             moveDownButtonId,
+            orderInputId,
         }) => {
             const hiddenSelect = document.getElementById(hiddenSelectId);
             const availableSelect = document.getElementById(availableSelectId);
@@ -229,7 +230,10 @@
             const removeButton = document.getElementById(removeButtonId);
             const moveUpButton = document.getElementById(moveUpButtonId);
             const moveDownButton = document.getElementById(moveDownButtonId);
-            const orderInput = document.getElementById("id_authors_order");
+            const orderInput = orderInputId
+                ? document.getElementById(orderInputId)
+                : null;
+            const supportsOrdering = Boolean(orderInput);
 
             if (!hiddenSelect || !availableSelect || !selectedSelect) {
                 return;
@@ -239,6 +243,9 @@
             let selectedOrder = [];
 
             const setInitialOrder = () => {
+                if (!supportsOrdering) {
+                    return;
+                }
                 const raw = orderInput?.value || "";
                 selectedOrder = raw
                     .split(",")
@@ -259,37 +266,65 @@
                 selectedSelect.innerHTML = "";
 
                 const filterValue = filterInput?.value.toLowerCase() || "";
-                const selectedSet = new Set(selectedOrder);
 
-                const availableOptions = allOptions.filter(
-                    (option) => !selectedSet.has(option.value)
-                );
-                availableOptions
-                    .filter(
-                        (option) =>
-                            !filterValue || option.text.toLowerCase().includes(filterValue),
-                    )
-                    .sort((a, b) => a.text.localeCompare(b.text))
-                    .forEach((option) => availableSelect.appendChild(option.cloneNode(true)));
+                if (supportsOrdering) {
+                    const selectedSet = new Set(selectedOrder);
 
-                selectedOrder
-                    .map((value) => allOptions.find((option) => option.value === value))
-                    .filter(Boolean)
-                    .forEach((option) => {
-                        const clone = option.cloneNode(true);
-                        clone.selected = true;
+                    const availableOptions = allOptions.filter(
+                        (option) => !selectedSet.has(option.value)
+                    );
+                    availableOptions
+                        .filter(
+                            (option) =>
+                                !filterValue || option.text.toLowerCase().includes(filterValue),
+                        )
+                        .sort((a, b) => a.text.localeCompare(b.text))
+                        .forEach((option) => availableSelect.appendChild(option.cloneNode(true)));
+
+                    selectedOrder
+                        .map((value) =>
+                            allOptions.find((option) => option.value === value),
+                        )
+                        .filter(Boolean)
+                        .forEach((option) => {
+                            const clone = option.cloneNode(true);
+                            clone.selected = true;
+                            selectedSelect.appendChild(clone);
+                        });
+                    return;
+                }
+
+                allOptions.forEach((option) => {
+                    const clone = option.cloneNode(true);
+                    const matchesFilter = option.text
+                        .toLowerCase()
+                        .includes(filterValue);
+
+                    if (option.selected) {
                         selectedSelect.appendChild(clone);
-                    });
+                    } else if (!filterValue || matchesFilter) {
+                        availableSelect.appendChild(clone);
+                    }
+                });
             };
 
             const syncHiddenFields = () => {
-                if (orderInput) {
+                if (supportsOrdering && orderInput) {
                     orderInput.value = selectedOrder.join(",");
                 }
 
-                const selectedSet = new Set(selectedOrder);
+                const selectedSet = supportsOrdering
+                    ? new Set(selectedOrder)
+                    : null;
                 Array.from(hiddenSelect.options).forEach((option) => {
-                    option.selected = selectedSet.has(option.value);
+                    if (supportsOrdering) {
+                        option.selected = selectedSet.has(option.value);
+                    } else {
+                        const twin = allOptions.find(
+                            (opt) => opt.value === option.value,
+                        );
+                        option.selected = twin ? twin.selected : option.selected;
+                    }
                 });
             };
 
@@ -301,16 +336,23 @@
 
                 selectedOptions.forEach((option) => {
                     const original = allOptions.find((opt) => opt.value === option.value);
-                    if (original) {
-                        const value = original.value;
-                        original.selected = markSelected;
-                        if (markSelected) {
-                            if (!selectedOrder.includes(value)) {
-                                selectedOrder.push(value);
-                            }
-                        } else {
-                            selectedOrder = selectedOrder.filter((id) => id !== value);
+                    if (!original) {
+                        return;
+                    }
+
+                    original.selected = markSelected;
+
+                    if (!supportsOrdering) {
+                        return;
+                    }
+
+                    const value = original.value;
+                    if (markSelected) {
+                        if (!selectedOrder.includes(value)) {
+                            selectedOrder.push(value);
                         }
+                    } else {
+                        selectedOrder = selectedOrder.filter((id) => id !== value);
                     }
                 });
                 renderLists();
@@ -322,6 +364,9 @@
             filterInput?.addEventListener("input", renderLists);
 
             const reorderSelection = (direction) => {
+                if (!supportsOrdering) {
+                    return;
+                }
                 const selectedIds = new Set(
                     Array.from(selectedSelect.selectedOptions).map((option) => option.value),
                 );
@@ -387,6 +432,7 @@
             removeButtonId: "remove-author",
             moveUpButtonId: "move-author-up",
             moveDownButtonId: "move-author-down",
+            orderInputId: "id_authors_order",
         });
 
         setupDualList({
@@ -396,6 +442,7 @@
             filterInputId: "tag-filter",
             addButtonId: "add-tag",
             removeButtonId: "remove-tag",
+            orderInputId: null,
         });
 
         setupDualList({
@@ -405,6 +452,7 @@
             filterInputId: "project-filter",
             addButtonId: "add-project",
             removeButtonId: "remove-project",
+            orderInputId: null,
         });
     })();
 </script>
