@@ -26,7 +26,7 @@ from .models import Author, Journal, Project, Publication, PublicationAnnotation
 AUTHOR_PREFETCH = Prefetch(
     "authors",
     queryset=Author.objects.order_by(
-        "publicationauthor__position", "publicationauthor__id"
+        "author_publications__position", "author_publications__id"
     ),
 )
 

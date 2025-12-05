@@ -123,7 +123,9 @@ class Publication(models.Model):
 
     @property
     def ordered_authors(self):
-        return self.authors.order_by("publicationauthor__position", "publicationauthor__id")
+        return Author.objects.filter(author_publications__publication=self).order_by(
+            "author_publications__position", "author_publications__id"
+        )
 
     def set_authors_in_order(self, authors):
         authors = list(authors)
