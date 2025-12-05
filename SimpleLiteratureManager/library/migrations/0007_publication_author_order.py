@@ -89,6 +89,7 @@ class Migration(migrations.Migration):
             ],
             options={
                 "ordering": ["position", "id"],
+                "db_table": "library_publicationauthor",
             },
         ),
         migrations.AddConstraint(
@@ -104,14 +105,23 @@ class Migration(migrations.Migration):
                 name="unique_publication_author_position",
             ),
         ),
-        migrations.AlterField(
-            model_name="publication",
-            name="authors",
-            field=models.ManyToManyField(
-                related_name="publications",
-                through="library.PublicationAuthor",
-                to="library.author",
-            ),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.RemoveField(
+                    model_name="publication",
+                    name="authors",
+                ),
+                migrations.AddField(
+                    model_name="publication",
+                    name="authors",
+                    field=models.ManyToManyField(
+                        related_name="publications",
+                        through="library.PublicationAuthor",
+                        to="library.author",
+                    ),
+                ),
+            ],
         ),
         migrations.RunPython(migrate_author_relations, reverse_migration),
     ]
