@@ -64,7 +64,9 @@ class Publication(models.Model):
         default=PublicationType.ARTICLE,
     )
 
-    authors = models.ManyToManyField(Author, related_name="publications")
+    authors = models.ManyToManyField(
+        Author, related_name="publications", through="PublicationAuthor"
+    )
     journal = models.ForeignKey(Journal, on_delete=models.SET_NULL, null=True, blank=True)
     volume = models.CharField(max_length=50, blank=True, null=True)
     pages = models.CharField(max_length=50, blank=True, null=True)
@@ -99,7 +101,7 @@ class Publication(models.Model):
 
         from django.utils.text import slugify
 
-        first_author = self.authors.order_by("last_name", "first_name").first()
+        first_author = self.ordered_authors.first()
         base_name = slugify(first_author.last_name) if first_author else "publication"
         if not base_name:
             base_name = "publication"
@@ -118,6 +120,49 @@ class Publication(models.Model):
 
         self.bibtex_key = candidate
         return candidate
+
+    @property
+    def ordered_authors(self):
+        return self.authors.order_by("publicationauthor__position", "publicationauthor__id")
+
+    def set_authors_in_order(self, authors):
+        authors = list(authors)
+
+        PublicationAuthor.objects.filter(publication=self).delete()
+        PublicationAuthor.objects.bulk_create(
+            [
+                PublicationAuthor(
+                    publication=self, author=author, position=index
+                )
+                for index, author in enumerate(authors, start=1)
+            ]
+        )
+        return authors
+
+
+class PublicationAuthor(models.Model):
+    publication = models.ForeignKey(
+        Publication, related_name="publication_authors", on_delete=models.CASCADE
+    )
+    author = models.ForeignKey(
+        Author, related_name="author_publications", on_delete=models.CASCADE
+    )
+    position = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        ordering = ["position", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["publication", "author"], name="unique_publication_author"
+            ),
+            models.UniqueConstraint(
+                fields=["publication", "position"],
+                name="unique_publication_author_position",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.publication} - {self.author} (Pos {self.position})"
 
 
 class PublicationAnnotation(models.Model):

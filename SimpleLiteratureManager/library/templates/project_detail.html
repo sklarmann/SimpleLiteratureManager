@@ -18,16 +18,16 @@
 <div class="card mb-4">
     <div class="card-body">
         <h5>Publikationen</h5>
-        {% if project.publications.all|length %}
+        {% if publications %}
             <ul class="list-group list-group-flush">
-                {% for publication in project.publications.all %}
+                {% for publication in publications %}
                     <li class="list-group-item">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
                                 <a href="{% url 'publication_detail' publication.id %}" class="fw-bold">{{ publication.title }}</a>
                                 <div class="text-muted">{{ publication.year }} | {{ publication.journal|default_if_none:"-" }}</div>
                                 <div>
-                                    {% for author in publication.authors.all %}
+                                    {% for author in publication.ordered_authors %}
                                         <a href="{% url 'author_detail' author.id %}">{{ author }}</a>{% if not forloop.last %}, {% endif %}
                                     {% empty %}
                                         &mdash;

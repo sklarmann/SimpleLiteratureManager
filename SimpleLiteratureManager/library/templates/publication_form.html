@@ -69,10 +69,19 @@
             <div class="col-md-5">
                 <label for="selected-authors" class="form-label">Zugeordnete Autoren</label>
                 <select multiple class="form-select" size="12" id="selected-authors"></select>
+                <div class="d-flex gap-2 mt-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="move-author-up">
+                        Nach oben
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="move-author-down">
+                        Nach unten
+                    </button>
+                </div>
             </div>
         </div>
         <div class="d-none">
             {{ form.authors }}
+            {{ form.authors_order }}
         </div>
         {% for error in form.authors.errors %}
             <div class="text-danger small">{{ error }}</div>
@@ -209,6 +218,8 @@
             filterInputId,
             addButtonId,
             removeButtonId,
+            moveUpButtonId,
+            moveDownButtonId,
         }) => {
             const hiddenSelect = document.getElementById(hiddenSelectId);
             const availableSelect = document.getElementById(availableSelectId);
@@ -216,28 +227,69 @@
             const filterInput = document.getElementById(filterInputId);
             const addButton = document.getElementById(addButtonId);
             const removeButton = document.getElementById(removeButtonId);
+            const moveUpButton = document.getElementById(moveUpButtonId);
+            const moveDownButton = document.getElementById(moveDownButtonId);
+            const orderInput = document.getElementById("id_authors_order");
 
             if (!hiddenSelect || !availableSelect || !selectedSelect) {
                 return;
             }
 
             const allOptions = Array.from(hiddenSelect.options).map((option) => option.cloneNode(true));
+            let selectedOrder = [];
+
+            const setInitialOrder = () => {
+                const raw = orderInput?.value || "";
+                selectedOrder = raw
+                    .split(",")
+                    .map((value) => value.trim())
+                    .filter(Boolean);
+
+                if (!selectedOrder.length) {
+                    selectedOrder = Array.from(hiddenSelect.options)
+                        .filter((option) => option.selected)
+                        .map((option) => option.value);
+                }
+            };
+
+            setInitialOrder();
 
             const renderLists = () => {
                 availableSelect.innerHTML = "";
                 selectedSelect.innerHTML = "";
 
                 const filterValue = filterInput?.value.toLowerCase() || "";
+                const selectedSet = new Set(selectedOrder);
 
-                allOptions.forEach((option) => {
-                    const targetSelect = option.selected ? selectedSelect : availableSelect;
-                    const matchesFilter = option.text.toLowerCase().includes(filterValue);
+                const availableOptions = allOptions.filter(
+                    (option) => !selectedSet.has(option.value)
+                );
+                availableOptions
+                    .filter(
+                        (option) =>
+                            !filterValue || option.text.toLowerCase().includes(filterValue),
+                    )
+                    .sort((a, b) => a.text.localeCompare(b.text))
+                    .forEach((option) => availableSelect.appendChild(option.cloneNode(true)));
 
-                    if (!option.selected && filterValue && !matchesFilter) {
-                        return;
-                    }
+                selectedOrder
+                    .map((value) => allOptions.find((option) => option.value === value))
+                    .filter(Boolean)
+                    .forEach((option) => {
+                        const clone = option.cloneNode(true);
+                        clone.selected = true;
+                        selectedSelect.appendChild(clone);
+                    });
+            };
 
-                    targetSelect.appendChild(option.cloneNode(true));
+            const syncHiddenFields = () => {
+                if (orderInput) {
+                    orderInput.value = selectedOrder.join(",");
+                }
+
+                const selectedSet = new Set(selectedOrder);
+                Array.from(hiddenSelect.options).forEach((option) => {
+                    option.selected = selectedSet.has(option.value);
                 });
             };
 
@@ -250,25 +302,80 @@
                 selectedOptions.forEach((option) => {
                     const original = allOptions.find((opt) => opt.value === option.value);
                     if (original) {
+                        const value = original.value;
                         original.selected = markSelected;
+                        if (markSelected) {
+                            if (!selectedOrder.includes(value)) {
+                                selectedOrder.push(value);
+                            }
+                        } else {
+                            selectedOrder = selectedOrder.filter((id) => id !== value);
+                        }
                     }
                 });
                 renderLists();
+                syncHiddenFields();
             };
 
             addButton?.addEventListener("click", () => moveOptions(availableSelect, true));
             removeButton?.addEventListener("click", () => moveOptions(selectedSelect, false));
             filterInput?.addEventListener("input", renderLists);
 
-            document.querySelector("form")?.addEventListener("submit", () => {
-                Array.from(hiddenSelect.options).forEach((option) => {
-                    option.selected = allOptions.some(
-                        (opt) => opt.value === option.value && opt.selected,
-                    );
+            const reorderSelection = (direction) => {
+                const selectedIds = new Set(
+                    Array.from(selectedSelect.selectedOptions).map((option) => option.value),
+                );
+                if (!selectedIds.size) {
+                    return;
+                }
+
+                const indices = selectedOrder
+                    .map((value, index) => ({ value, index }))
+                    .filter(({ value }) => selectedIds.has(value))
+                    .map(({ index }) => index);
+
+                if (!indices.length) {
+                    return;
+                }
+
+                const step = direction === "up" ? -1 : 1;
+                const reordered = [...selectedOrder];
+                const sortedIndices =
+                    direction === "up"
+                        ? indices.sort((a, b) => a - b)
+                        : indices.sort((a, b) => b - a);
+
+                sortedIndices.forEach((currentIndex) => {
+                    const newIndex = currentIndex + step;
+                    if (newIndex < 0 || newIndex >= reordered.length) {
+                        return;
+                    }
+                    const temp = reordered[newIndex];
+                    reordered[newIndex] = reordered[currentIndex];
+                    reordered[currentIndex] = temp;
                 });
+
+                selectedOrder = reordered;
+                renderLists();
+                syncHiddenFields();
+
+                selectedSelect.selectedIndex = -1;
+                Array.from(selectedSelect.options).forEach((option) => {
+                    if (selectedIds.has(option.value)) {
+                        option.selected = true;
+                    }
+                });
+            };
+
+            moveUpButton?.addEventListener("click", () => reorderSelection("up"));
+            moveDownButton?.addEventListener("click", () => reorderSelection("down"));
+
+            document.querySelector("form")?.addEventListener("submit", () => {
+                syncHiddenFields();
             });
 
             renderLists();
+            syncHiddenFields();
         };
 
         setupDualList({
@@ -278,6 +385,8 @@
             filterInputId: "author-filter",
             addButtonId: "add-author",
             removeButtonId: "remove-author",
+            moveUpButtonId: "move-author-up",
+            moveDownButtonId: "move-author-down",
         });
 
         setupDualList({

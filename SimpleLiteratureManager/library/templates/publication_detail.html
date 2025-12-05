@@ -29,8 +29,8 @@
 
             <dt class="col-sm-3">Autoren</dt>
             <dd class="col-sm-9">
-                {% if publication.authors.all|length %}
-                    {{ publication.authors.all|join:", " }}
+                {% if publication.ordered_authors %}
+                    {{ publication.ordered_authors|join:", " }}
                 {% else %}
                     -
                 {% endif %}

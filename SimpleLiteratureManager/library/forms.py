@@ -23,6 +23,8 @@ class TagForm(forms.ModelForm):
 
 
 class PublicationForm(forms.ModelForm):
+    authors_order = forms.CharField(required=False, widget=forms.HiddenInput())
+
     class Meta:
         model = Publication
         fields = [
@@ -31,6 +33,7 @@ class PublicationForm(forms.ModelForm):
             "doi",
             "publication_type",
             "authors",
+            "authors_order",
             "journal",
             "volume",
             "pages",
@@ -54,6 +57,15 @@ class PublicationForm(forms.ModelForm):
             "pdf": forms.ClearableFileInput(attrs={"class": "form-control"}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            ordered_ids = [author.pk for author in self.instance.ordered_authors]
+            self.fields["authors"].initial = ordered_ids
+            self.fields["authors_order"].initial = ",".join(
+                str(author_id) for author_id in ordered_ids
+            )
+
     def save(self, commit=True):
         publication = super().save(commit=commit)
 
@@ -61,13 +73,24 @@ class PublicationForm(forms.ModelForm):
             publication.generate_bibtex_key(force=True)
             publication.save(update_fields=["bibtex_key"])
 
+        def apply_author_order():
+            order_raw = self.cleaned_data.get("authors_order", "")
+            order_ids = [int(value) for value in order_raw.split(",") if value]
+            authors_by_id = Author.objects.in_bulk(order_ids)
+            ordered_authors = [authors_by_id[id_] for id_ in order_ids if id_ in authors_by_id]
+            if not ordered_authors and self.cleaned_data.get("authors"):
+                ordered_authors = list(self.cleaned_data["authors"])
+            publication.set_authors_in_order(ordered_authors)
+
         if commit:
+            apply_author_order()
             refresh_bibtex_key()
         else:
             original_save_m2m = self.save_m2m
 
             def _save_m2m():
                 original_save_m2m()
+                apply_author_order()
                 refresh_bibtex_key()
 
             self.save_m2m = _save_m2m

@@ -32,8 +32,8 @@
                             <a href="{% url 'publication_detail' publication.id %}">{{ publication.title }}</a>
                         </td>
                         <td>
-                            {% if publication.authors.all|length %}
-                                {% for author in publication.authors.all %}
+                            {% if publication.ordered_authors %}
+                                {% for author in publication.ordered_authors %}
                                     <a href="{% url 'author_detail' author.id %}">{{ author }}</a>{% if not forloop.last %}, {% endif %}
                                 {% endfor %}
                             {% else %}

@@ -139,9 +139,9 @@
                             <input class="form-check-input" type="radio" name="authors_source" id="authors_existing" value="existing" checked>
                             <label class="form-check-label" for="authors_existing">Bestehende Autoren</label>
                             <div class="small text-muted">
-                                {% if publication.authors.all %}
+                                {% if publication.ordered_authors %}
                                     <ul class="mb-0">
-                                        {% for author in publication.authors.all %}
+                                        {% for author in publication.ordered_authors %}
                                             <li>{{ author.last_name }}, {{ author.first_name }}</li>
                                         {% empty %}
                                             <li>-</li>

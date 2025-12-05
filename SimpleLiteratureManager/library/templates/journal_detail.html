@@ -31,10 +31,10 @@
                                 <a href="{% url 'publication_detail' publication.id %}" class="fw-bold">{{ publication.title }}</a>
                                 <div class="text-muted">{{ publication.year }} | {{ publication.journal|default_if_none:"-" }}</div>
                                 <div>
-                                    {% for author in publication.authors.all %}
-                                        <a href="{% url 'author_detail' author.id %}">{{ author }}</a>{% if not forloop.last %}, {% endif %}
-                                    {% empty %}
-                                        &mdash;
+                                {% for author in publication.ordered_authors %}
+                                    <a href="{% url 'author_detail' author.id %}">{{ author }}</a>{% if not forloop.last %}, {% endif %}
+                                {% empty %}
+                                    &mdash;
                                     {% endfor %}
                                 </div>
                                 <div class="mt-1">

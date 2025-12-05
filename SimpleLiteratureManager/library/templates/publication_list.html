@@ -25,8 +25,8 @@
                 <td>
                     <a href="{% url 'publication_detail' p.id %}">{{ p.title }}</a>
                 </td>
-                <td data-value="{{ p.authors.all|join:', ' }}">
-                    {% for author in p.authors.all %}
+                <td data-value="{{ p.ordered_authors|join:', ' }}">
+                    {% for author in p.ordered_authors %}
                         <a href="{% url 'author_detail' author.id %}">{{ author }}</a>{% if not forloop.last %}, {% endif %}
                     {% empty %}
                         &mdash;

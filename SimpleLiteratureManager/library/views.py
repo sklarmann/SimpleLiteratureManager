@@ -6,6 +6,7 @@ import re
 
 import requests
 from django.db import models, transaction
+from django.db.models import Prefetch
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.html import strip_tags
@@ -21,6 +22,14 @@ from .forms import (
 )
 from .models import Author, Journal, Project, Publication, PublicationAnnotation, Tag
 
+
+AUTHOR_PREFETCH = Prefetch(
+    "authors",
+    queryset=Author.objects.order_by(
+        "publicationauthor__position", "publicationauthor__id"
+    ),
+)
+
 def author_list(request):
     authors = Author.objects.all()
     return render(request, "author_list.html", {"authors": authors})
@@ -30,7 +39,9 @@ def author_detail(request, pk):
     author = get_object_or_404(
         Author.objects.prefetch_related("publications__journal"), pk=pk
     )
-    publications = author.publications.select_related("journal")
+    publications = author.publications.select_related("journal").prefetch_related(
+        AUTHOR_PREFETCH
+    )
     return render(
         request,
         "author_detail.html",
@@ -126,12 +137,15 @@ def journal_list(request):
 def journal_detail(request, pk):
     journal = get_object_or_404(
         Journal.objects.prefetch_related(
-            "publication_set__authors", "publication_set__journal", "publication_set__tags"
+            "publication_set__authors",
+            "publication_set__journal",
+            "publication_set__tags",
         ),
         pk=pk,
     )
     publications = journal.publication_set.select_related("journal").prefetch_related(
-        "authors", "tags"
+        AUTHOR_PREFETCH,
+        "tags",
     )
     return render(
         request, "journal_detail.html", {"journal": journal, "publications": publications}
@@ -146,12 +160,14 @@ def tag_list(request):
 def tag_detail(request, pk):
     tag = get_object_or_404(
         Tag.objects.prefetch_related(
-            "publications__authors", "publications__journal", "publications__tags"
+            "publications__authors",
+            "publications__journal",
+            "publications__tags",
         ),
         pk=pk,
     )
-    publications = (
-        tag.publications.select_related("journal").prefetch_related("authors", "tags")
+    publications = tag.publications.select_related("journal").prefetch_related(
+        AUTHOR_PREFETCH, "tags"
     )
     return render(request, "tag_detail.html", {"tag": tag, "publications": publications})
 
@@ -195,7 +211,7 @@ def journal_create(request):
 def publication_list(request):
     publications = (
         Publication.objects.select_related("journal")
-        .prefetch_related("authors", "tags", "projects")
+        .prefetch_related(AUTHOR_PREFETCH, "tags", "projects")
     )
     return render(request, "publication_list.html", {"publications": publications})
 
@@ -213,7 +229,9 @@ def publication_create(request):
 
 def publication_detail(request, pk):
     publication = get_object_or_404(
-        Publication.objects.select_related("journal").prefetch_related("authors", "tags", "projects"),
+        Publication.objects.select_related("journal").prefetch_related(
+            AUTHOR_PREFETCH, "tags", "projects"
+        ),
         pk=pk,
     )
     return render(request, "publication_detail.html", {"publication": publication})
@@ -394,7 +412,7 @@ def publication_update_from_doi(request, pk):
                     },
                 )
                 author_instances.append(instance)
-            publication.authors.set(author_instances)
+            publication.set_authors_in_order(author_instances)
 
         publication.generate_bibtex_key(force=True)
         publication.save()
@@ -417,11 +435,18 @@ def project_list(request):
 def project_detail(request, pk):
     project = get_object_or_404(
         Project.objects.prefetch_related(
-            "publications__authors", "publications__journal", "publications__tags"
+            "publications__authors",
+            "publications__journal",
+            "publications__tags",
         ),
         pk=pk,
     )
-    return render(request, "project_detail.html", {"project": project})
+    project_publications = project.publications.select_related("journal").prefetch_related(
+        AUTHOR_PREFETCH, "tags"
+    )
+    return render(
+        request, "project_detail.html", {"project": project, "publications": project_publications}
+    )
 
 
 def project_create(request):
@@ -566,7 +591,7 @@ def publication_add_by_doi(request):
                         author_instances.append(instance)
 
                     if author_instances:
-                        publication.authors.set(author_instances)
+                        publication.set_authors_in_order(author_instances)
 
                     publication.generate_bibtex_key(force=True)
                     publication.save(update_fields=["bibtex_key"])
