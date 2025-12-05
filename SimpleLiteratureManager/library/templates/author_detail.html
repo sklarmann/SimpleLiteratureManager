@@ -37,11 +37,15 @@
         <tbody>
             {% for publication in publications %}
             <tr>
-                <td>{{ publication.title }}</td>
+                <td>
+                    <a href="{% url 'publication_detail' publication.id %}">{{ publication.title }}</a>
+                </td>
                 <td>{{ publication.year }}</td>
                 <td>
                     {% if publication.journal %}
-                        {{ publication.journal.name }}
+                        <a href="{% url 'journal_detail' publication.journal.id %}">
+                            {{ publication.journal.name }}
+                        </a>
                     {% else %}
                         -
                     {% endif %}

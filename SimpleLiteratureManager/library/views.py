@@ -123,6 +123,21 @@ def journal_list(request):
     return render(request, "journal_list.html", {"journals": journals})
 
 
+def journal_detail(request, pk):
+    journal = get_object_or_404(
+        Journal.objects.prefetch_related(
+            "publication_set__authors", "publication_set__journal", "publication_set__tags"
+        ),
+        pk=pk,
+    )
+    publications = journal.publication_set.select_related("journal").prefetch_related(
+        "authors", "tags"
+    )
+    return render(
+        request, "journal_detail.html", {"journal": journal, "publications": publications}
+    )
+
+
 def tag_list(request):
     tags = Tag.objects.annotate(publication_count=models.Count("publications"))
     return render(request, "tag_list.html", {"tags": tags})

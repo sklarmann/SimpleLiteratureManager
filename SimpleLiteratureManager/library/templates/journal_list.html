@@ -17,7 +17,7 @@
         <tbody>
             {% for j in journals %}
             <tr>
-                <td>{{ j.name }}</td>
+                <td><a href="{% url 'journal_detail' j.id %}">{{ j.name }}</a></td>
                 <td>{{ j.issn|default_if_none:"" }}</td>
                 <td>{{ j.publisher|default_if_none:"" }}</td>
             </tr>
