@@ -74,12 +74,23 @@ class PublicationForm(forms.ModelForm):
             publication.save(update_fields=["bibtex_key"])
 
         def apply_author_order():
-            order_raw = self.cleaned_data.get("authors_order", "")
-            order_ids = [int(value) for value in order_raw.split(",") if value]
+            order_raw = (
+                self.data.get("authors_order")
+                if self.is_bound
+                else self.cleaned_data.get("authors_order", "")
+            )
+            order_ids = [int(value) for value in order_raw.split(",") if value.strip().isdigit()]
             authors_by_id = Author.objects.in_bulk(order_ids)
-            ordered_authors = [authors_by_id[id_] for id_ in order_ids if id_ in authors_by_id]
+            ordered_authors = [
+                authors_by_id[id_]
+                for id_ in order_ids
+                if id_ in authors_by_id
+            ]
             if not ordered_authors and self.cleaned_data.get("authors"):
                 ordered_authors = list(self.cleaned_data["authors"])
+            elif not ordered_authors and self.instance.pk:
+                ordered_authors = list(self.instance.ordered_authors)
+
             publication.set_authors_in_order(ordered_authors)
 
         if commit:
