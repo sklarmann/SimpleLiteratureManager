@@ -65,3 +65,24 @@ class Publication(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.year})"
+
+
+class PublicationAnnotation(models.Model):
+    publication = models.ForeignKey(
+        Publication, related_name="annotations", on_delete=models.CASCADE
+    )
+    page_number = models.PositiveIntegerField()
+    x = models.FloatField(help_text="Linke Position relativ zur Seite (0-1)")
+    y = models.FloatField(help_text="Obere Position relativ zur Seite (0-1)")
+    width = models.FloatField(help_text="Breite relativ zur Seite (0-1)")
+    height = models.FloatField(help_text="Höhe relativ zur Seite (0-1)")
+    color = models.CharField(max_length=20, default="#ffeb3b")
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["publication", "page_number", "created_at"]
+
+    def __str__(self):
+        return f"Annotation Seite {self.page_number} für {self.publication.title}"

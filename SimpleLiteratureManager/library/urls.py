@@ -30,4 +30,14 @@ urlpatterns = [
     path("projects/add/", views.project_create, name="project_create"),
     path("projects/<int:pk>/", views.project_detail, name="project_detail"),
     path("projects/<int:pk>/edit/", views.project_update, name="project_update"),
+    path(
+        "publications/<int:pk>/annotations/",
+        views.publication_annotations,
+        name="publication_annotations",
+    ),
+    path(
+        "publications/<int:pk>/annotations/<int:annotation_id>/",
+        views.publication_annotation_detail,
+        name="publication_annotation_detail",
+    ),
 ]

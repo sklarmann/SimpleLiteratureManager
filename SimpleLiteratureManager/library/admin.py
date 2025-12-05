@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .forms import ProjectForm
-from .models import Author, Journal, Project, Publication, Tag
+from .models import Author, Journal, Project, Publication, PublicationAnnotation, Tag
 
 @admin.register(Author)
 class AuthorAdmin(admin.ModelAdmin):
@@ -20,6 +20,19 @@ class PublicationAdmin(admin.ModelAdmin):
     list_filter = ("year", "journal", "tags")
     search_fields = ("title", "doi")
     filter_horizontal = ("authors", "tags")
+
+
+@admin.register(PublicationAnnotation)
+class PublicationAnnotationAdmin(admin.ModelAdmin):
+    list_display = (
+        "publication",
+        "page_number",
+        "comment",
+        "color",
+        "created_at",
+    )
+    list_filter = ("page_number", "publication")
+    search_fields = ("comment", "publication__title")
 
 
 @admin.register(Tag)

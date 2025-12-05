@@ -67,6 +67,7 @@
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
         <span>PDF</span>
+        <small class="text-muted">Markieren Sie Text im PDF, um eine Notiz zu speichern.</small>
     </div>
     <div class="card-body">
         <div class="position-relative" style="height: 800px;">
@@ -75,6 +76,27 @@
                 <div id="pdf-error" class="alert alert-warning mt-3 d-none" role="alert">
                     Das PDF konnte nicht geladen werden.
                 </div>
+            </div>
+        </div>
+        <div class="mt-3 p-3 bg-light rounded" id="annotation-panel" data-annotations-url="{% url 'publication_annotations' publication.id %}">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <label class="form-label mb-0" for="annotation-color">Farbe</label>
+                    <input type="color" class="form-control form-control-color" id="annotation-color" value="#ffeb3b" title="Markierungsfarbe">
+                </div>
+                <div class="flex-grow-1">
+                    <label for="annotation-comment" class="form-label mb-1">Kommentar</label>
+                    <textarea id="annotation-comment" class="form-control" rows="2" placeholder="Kommentar zur Markierung"></textarea>
+                </div>
+                <div class="d-flex flex-column align-items-end" style="min-width: 200px;">
+                    <button class="btn btn-primary mb-1" id="save-annotation" disabled>Markierung speichern</button>
+                    <small class="text-muted" id="annotation-hint">Text im PDF markieren, um eine neue Markierung anzulegen.</small>
+                </div>
+            </div>
+            <hr>
+            <div>
+                <h5 class="h6">Gespeicherte Markierungen</h5>
+                <div id="annotation-list" class="list-group list-group-flush"></div>
             </div>
         </div>
     </div>
@@ -92,6 +114,8 @@
             initPublicationPdfViewer({
                 pdfUrl: "{{ publication.pdf.url }}",
                 workerSrc: "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js",
+                annotationsUrl: "{% url 'publication_annotations' publication.id %}",
+                annotationDetailUrlTemplate: "{% url 'publication_annotation_detail' publication.id 0 %}",
             });
         });
     </script>

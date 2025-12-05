@@ -1,12 +1,15 @@
 from collections import defaultdict
 from difflib import SequenceMatcher
 from itertools import combinations
+import json
 import re
 
 import requests
 from django.db import models, transaction
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.html import strip_tags
+from django.views.decorators.http import require_http_methods
 
 from .forms import (
     AuthorForm,
@@ -16,7 +19,7 @@ from .forms import (
     PublicationForm,
     TagForm,
 )
-from .models import Author, Journal, Project, Publication, Tag
+from .models import Author, Journal, Project, Publication, PublicationAnnotation, Tag
 
 def author_list(request):
     authors = Author.objects.all()
@@ -199,6 +202,80 @@ def publication_detail(request, pk):
         pk=pk,
     )
     return render(request, "publication_detail.html", {"publication": publication})
+
+
+def _serialize_annotation(annotation):
+    return {
+        "id": annotation.id,
+        "page_number": annotation.page_number,
+        "x": annotation.x,
+        "y": annotation.y,
+        "width": annotation.width,
+        "height": annotation.height,
+        "color": annotation.color,
+        "comment": annotation.comment,
+        "created_at": annotation.created_at,
+        "updated_at": annotation.updated_at,
+    }
+
+
+@require_http_methods(["GET", "POST"])
+def publication_annotations(request, pk):
+    publication = get_object_or_404(Publication, pk=pk)
+
+    if request.method == "GET":
+        annotations = publication.annotations.all()
+        return JsonResponse([_serialize_annotation(a) for a in annotations], safe=False)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Ungültiger JSON-Body."}, status=400)
+
+    required_fields = ["page_number", "x", "y", "width", "height", "color"]
+    missing_fields = [field for field in required_fields if field not in payload]
+    if missing_fields:
+        return JsonResponse(
+            {"error": f"Fehlende Felder: {', '.join(missing_fields)}"}, status=400
+        )
+
+    annotation = PublicationAnnotation.objects.create(
+        publication=publication,
+        page_number=payload.get("page_number"),
+        x=payload.get("x"),
+        y=payload.get("y"),
+        width=payload.get("width"),
+        height=payload.get("height"),
+        color=payload.get("color", "#ffeb3b"),
+        comment=payload.get("comment", ""),
+    )
+
+    return JsonResponse(_serialize_annotation(annotation), status=201)
+
+
+@require_http_methods(["PATCH", "DELETE"])
+def publication_annotation_detail(request, pk, annotation_id):
+    publication = get_object_or_404(Publication, pk=pk)
+    annotation = get_object_or_404(
+        PublicationAnnotation, pk=annotation_id, publication=publication
+    )
+
+    if request.method == "DELETE":
+        annotation.delete()
+        return JsonResponse({"status": "deleted"})
+
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Ungültiger JSON-Body."}, status=400)
+
+    if "comment" in payload:
+        annotation.comment = payload["comment"]
+    if "color" in payload:
+        annotation.color = payload["color"]
+    annotation.save(update_fields=["comment", "color", "updated_at"])
+
+    return JsonResponse(_serialize_annotation(annotation))
 
 
 def publication_update(request, pk):
