@@ -295,6 +295,102 @@ def publication_update(request, pk):
     )
 
 
+def publication_update_from_doi(request, pk):
+    publication = get_object_or_404(Publication, pk=pk)
+    doi_value = (publication.doi or "").strip()
+
+    if not doi_value:
+        return render(
+            request,
+            "publication_doi_update.html",
+            {
+                "publication": publication,
+                "error": "Für diese Publikation ist keine DOI hinterlegt.",
+                "doi_data": None,
+            },
+        )
+
+    try:
+        doi_data = _fetch_publication_by_doi(doi_value)
+    except (requests.RequestException, ValueError) as exc:
+        return render(
+            request,
+            "publication_doi_update.html",
+            {"publication": publication, "error": str(exc), "doi_data": None},
+        )
+
+    doi_data["publication_type_label"] = None
+    if doi_data.get("publication_type"):
+        doi_data["publication_type_label"] = Publication.PublicationType(
+            doi_data["publication_type"]
+        ).label
+
+    if request.method == "POST":
+        publication.title = (
+            doi_data["title"]
+            if request.POST.get("title_source") == "doi"
+            else publication.title
+        )
+        publication.year = (
+            doi_data["year"]
+            if request.POST.get("year_source") == "doi"
+            else publication.year
+        )
+        publication.abstract = (
+            doi_data["abstract"]
+            if request.POST.get("abstract_source") == "doi"
+            else publication.abstract
+        )
+        publication.volume = (
+            doi_data.get("volume") or ""
+            if request.POST.get("volume_source") == "doi"
+            else publication.volume
+        )
+        publication.pages = (
+            doi_data.get("pages") or ""
+            if request.POST.get("pages_source") == "doi"
+            else publication.pages
+        )
+        publication.publication_type = (
+            doi_data.get("publication_type", Publication.PublicationType.ARTICLE)
+            if request.POST.get("publication_type_source") == "doi"
+            else publication.publication_type
+        )
+
+        if request.POST.get("journal_source") == "doi":
+            journal = None
+            if doi_data.get("journal_title"):
+                journal, _ = Journal.objects.get_or_create(
+                    name=doi_data["journal_title"],
+                    defaults={"issn": doi_data.get("issn") or "", "publisher": ""},
+                )
+            publication.journal = journal
+
+        if request.POST.get("authors_source") == "doi":
+            author_instances = []
+            for author in doi_data.get("authors", []):
+                instance, _ = Author.objects.get_or_create(
+                    first_name=author.get("first_name", ""),
+                    last_name=author.get("last_name", ""),
+                    defaults={
+                        "orcid": author.get("orcid"),
+                        "university": "",
+                        "department": "",
+                    },
+                )
+                author_instances.append(instance)
+            publication.authors.set(author_instances)
+
+        publication.save()
+        return redirect("publication_detail", pk=publication.pk)
+
+    return render(
+        request,
+        "publication_doi_update.html",
+        {"publication": publication, "doi_data": doi_data, "error": None},
+    )
+
+
 def project_list(request):
     projects = Project.objects.prefetch_related(
         "publications__authors", "publications__journal"
@@ -365,6 +461,48 @@ def _parse_authors(message):
     return authors
 
 
+def _map_crossref_type(raw_type):
+    mapping = {
+        "journal-article": Publication.PublicationType.ARTICLE,
+        "article": Publication.PublicationType.ARTICLE,
+        "proceedings-article": Publication.PublicationType.PROCEEDINGS,
+        "proceedings": Publication.PublicationType.PROCEEDINGS,
+        "book": Publication.PublicationType.BOOK,
+        "monograph": Publication.PublicationType.BOOK,
+    }
+    return mapping.get(raw_type, Publication.PublicationType.ARTICLE)
+
+
+def _fetch_publication_by_doi(doi):
+    response = requests.get(f"https://api.crossref.org/works/{doi}", timeout=10)
+    response.raise_for_status()
+    message = response.json().get("message", {})
+
+    title_list = message.get("title", [])
+    if not title_list:
+        raise ValueError("Kein Titel in den DOI-Daten gefunden.")
+
+    title = title_list[0]
+    year = _extract_year(message)
+    abstract = strip_tags(message.get("abstract", "")).strip()
+    journal_title = (message.get("container-title") or [None])[0]
+    issn = (message.get("ISSN") or [None])[0]
+    authors = _parse_authors(message)
+    publication_type = _map_crossref_type(message.get("type"))
+
+    return {
+        "title": title,
+        "year": year,
+        "abstract": abstract,
+        "journal_title": journal_title,
+        "issn": issn,
+        "authors": authors,
+        "volume": message.get("volume", ""),
+        "pages": message.get("page", ""),
+        "publication_type": publication_type,
+    }
+
+
 def publication_add_by_doi(request):
     error = None
     if request.method == "POST":
@@ -372,39 +510,34 @@ def publication_add_by_doi(request):
         if form.is_valid():
             doi = form.cleaned_data["doi"].strip()
             try:
-                response = requests.get(f"https://api.crossref.org/works/{doi}", timeout=10)
-                response.raise_for_status()
-                message = response.json().get("message", {})
-
-                title_list = message.get("title", [])
-                if not title_list:
-                    raise ValueError("Kein Titel in den DOI-Daten gefunden.")
-
-                title = title_list[0]
-                year = _extract_year(message)
-                abstract = strip_tags(message.get("abstract", "")).strip()
-                journal_title = (message.get("container-title") or [None])[0]
-                issn = (message.get("ISSN") or [None])[0]
-                authors = _parse_authors(message)
+                publication_data = _fetch_publication_by_doi(doi)
 
                 with transaction.atomic():
                     journal = None
-                    if journal_title:
+                    if publication_data["journal_title"]:
                         journal, _ = Journal.objects.get_or_create(
-                            name=journal_title,
-                            defaults={"issn": issn or "", "publisher": ""},
+                            name=publication_data["journal_title"],
+                            defaults={
+                                "issn": publication_data.get("issn") or "",
+                                "publisher": "",
+                            },
                         )
 
                     publication = Publication.objects.create(
-                        title=title,
-                        year=year,
+                        title=publication_data["title"],
+                        year=publication_data["year"],
                         doi=doi,
                         journal=journal,
-                        abstract=abstract,
+                        abstract=publication_data["abstract"],
+                        volume=publication_data.get("volume") or "",
+                        pages=publication_data.get("pages") or "",
+                        publication_type=publication_data.get(
+                            "publication_type", Publication.PublicationType.ARTICLE
+                        ),
                     )
 
                     author_instances = []
-                    for author in authors:
+                    for author in publication_data["authors"]:
                         instance, _ = Author.objects.get_or_create(
                             first_name=author["first_name"],
                             last_name=author["last_name"],

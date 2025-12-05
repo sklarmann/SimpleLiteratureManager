@@ -28,6 +28,13 @@
         {% for error in form.doi.errors %}
             <div class="text-danger small">{{ error }}</div>
         {% endfor %}
+        {% if is_edit %}
+            <div class="mt-2">
+                <a class="btn btn-outline-info btn-sm" href="{% url 'publication_update_from_doi' publication.id %}">
+                    Daten via DOI abrufen
+                </a>
+            </div>
+        {% endif %}
     </div>
 
     <div class="mb-3">

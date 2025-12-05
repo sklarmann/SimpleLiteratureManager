@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Publikation über DOI aktualisieren</h1>
+<p class="text-muted">Aktuelle Publikation: {{ publication.title }}{% if publication.year %} ({{ publication.year }}){% endif %}</p>
+
+{% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+    <a class="btn btn-secondary" href="{% url 'publication_update' publication.id %}">Zurück zur Bearbeitung</a>
+{% else %}
+    <form method="post" class="mt-3">
+        {% csrf_token %}
+        <p>Wähle für jedes Feld, ob der bestehende Wert oder der aus der DOI übernommen werden soll.</p>
+        <div class="list-group">
+            <div class="list-group-item">
+                <div class="row align-items-center">
+                    <div class="col-md-3 fw-semibold">Titel</div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="title_source" id="title_existing" value="existing" checked>
+                            <label class="form-check-label" for="title_existing">Bestehender Titel</label>
+                            <div class="small text-muted">{{ publication.title|default:"-" }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="title_source" id="title_doi" value="doi">
+                            <label class="form-check-label" for="title_doi">Titel aus DOI</label>
+                            <div class="small text-muted">{{ doi_data.title|default:"-" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="list-group-item">
+                <div class="row align-items-center">
+                    <div class="col-md-3 fw-semibold">Jahr</div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="year_source" id="year_existing" value="existing" checked>
+                            <label class="form-check-label" for="year_existing">Bestehendes Jahr</label>
+                            <div class="small text-muted">{{ publication.year|default:"-" }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="year_source" id="year_doi" value="doi">
+                            <label class="form-check-label" for="year_doi">Jahr aus DOI</label>
+                            <div class="small text-muted">{{ doi_data.year|default:"-" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="list-group-item">
+                <div class="row align-items-center">
+                    <div class="col-md-3 fw-semibold">Publikationstyp</div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="publication_type_source" id="type_existing" value="existing" checked>
+                            <label class="form-check-label" for="type_existing">Bestehender Typ</label>
+                            <div class="small text-muted">{{ publication.get_publication_type_display|default:"-" }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="publication_type_source" id="type_doi" value="doi">
+                            <label class="form-check-label" for="type_doi">Typ aus DOI</label>
+                            <div class="small text-muted">{{ doi_data.publication_type_label|default:"-" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="list-group-item">
+                <div class="row align-items-center">
+                    <div class="col-md-3 fw-semibold">Journal</div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="journal_source" id="journal_existing" value="existing" checked>
+                            <label class="form-check-label" for="journal_existing">Bestehendes Journal</label>
+                            <div class="small text-muted">{{ publication.journal.name|default:"-" }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="journal_source" id="journal_doi" value="doi">
+                            <label class="form-check-label" for="journal_doi">Journal aus DOI</label>
+                            <div class="small text-muted">{{ doi_data.journal_title|default:"-" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="list-group-item">
+                <div class="row align-items-center">
+                    <div class="col-md-3 fw-semibold">Volume</div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="volume_source" id="volume_existing" value="existing" checked>
+                            <label class="form-check-label" for="volume_existing">Bestehendes Volume</label>
+                            <div class="small text-muted">{{ publication.volume|default:"-" }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="volume_source" id="volume_doi" value="doi">
+                            <label class="form-check-label" for="volume_doi">Volume aus DOI</label>
+                            <div class="small text-muted">{{ doi_data.volume|default:"-" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="list-group-item">
+                <div class="row align-items-center">
+                    <div class="col-md-3 fw-semibold">Seiten</div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="pages_source" id="pages_existing" value="existing" checked>
+                            <label class="form-check-label" for="pages_existing">Bestehende Seiten</label>
+                            <div class="small text-muted">{{ publication.pages|default:"-" }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="pages_source" id="pages_doi" value="doi">
+                            <label class="form-check-label" for="pages_doi">Seiten aus DOI</label>
+                            <div class="small text-muted">{{ doi_data.pages|default:"-" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="list-group-item">
+                <div class="row align-items-center">
+                    <div class="col-md-3 fw-semibold">Autoren</div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="authors_source" id="authors_existing" value="existing" checked>
+                            <label class="form-check-label" for="authors_existing">Bestehende Autoren</label>
+                            <div class="small text-muted">
+                                {% if publication.authors.all %}
+                                    <ul class="mb-0">
+                                        {% for author in publication.authors.all %}
+                                            <li>{{ author.last_name }}, {{ author.first_name }}</li>
+                                        {% empty %}
+                                            <li>-</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="authors_source" id="authors_doi" value="doi">
+                            <label class="form-check-label" for="authors_doi">Autoren aus DOI</label>
+                            <div class="small text-muted">
+                                {% if doi_data.authors %}
+                                    <ul class="mb-0">
+                                        {% for author in doi_data.authors %}
+                                            <li>{{ author.last_name }}, {{ author.first_name }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="list-group-item">
+                <div class="row align-items-center">
+                    <div class="col-md-3 fw-semibold">Abstract</div>
+                    <div class="col-md-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="abstract_source" id="abstract_existing" value="existing" checked>
+                            <label class="form-check-label" for="abstract_existing">Bestehendes Abstract</label>
+                            <div class="small text-muted">{{ publication.abstract|default:"-" }}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="abstract_source" id="abstract_doi" value="doi">
+                            <label class="form-check-label" for="abstract_doi">Abstract aus DOI</label>
+                            <div class="small text-muted">{{ doi_data.abstract|default:"-" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3 d-flex gap-2">
+            <button class="btn btn-primary" type="submit">Auswahl übernehmen</button>
+            <a class="btn btn-secondary" href="{% url 'publication_update' publication.id %}">Zurück</a>
+        </div>
+    </form>
+{% endif %}
+{% endblock %}

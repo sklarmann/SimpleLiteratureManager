@@ -25,6 +25,11 @@ urlpatterns = [
     path(
         "publications/<int:pk>/edit/", views.publication_update, name="publication_update"
     ),
+    path(
+        "publications/<int:pk>/doi-update/",
+        views.publication_update_from_doi,
+        name="publication_update_from_doi",
+    ),
     path("publications/add-doi/", views.publication_add_by_doi, name="publication_add_by_doi"),
     path("projects/", views.project_list, name="project_list"),
     path("projects/add/", views.project_create, name="project_create"),
