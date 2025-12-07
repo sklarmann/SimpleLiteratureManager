@@ -49,5 +49,53 @@
     </div>
 </div>
 
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>BibLaTeX</span>
+        <button class="btn btn-outline-secondary btn-sm" id="copy-biblatex" {% if not publications %}disabled{% endif %}>In Zwischenablage kopieren</button>
+    </div>
+    <div class="card-body">
+        {% if publications %}
+            <label class="form-label fw-semibold" for="biblatex-entries">Einträge</label>
+            <textarea id="biblatex-entries" class="form-control font-monospace" rows="10" readonly>{{ biblatex_entries }}</textarea>
+            <div id="copy-feedback" class="text-success small mt-2 d-none">Einträge wurden kopiert.</div>
+        {% else %}
+            <p class="mb-0 text-muted">Keine Publikationen vorhanden.</p>
+        {% endif %}
+    </div>
+</div>
+
 <a class="btn btn-secondary" href="{% url 'project_list' %}">Zurück zur Liste</a>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const copyButton = document.getElementById("copy-biblatex");
+        const textarea = document.getElementById("biblatex-entries");
+        const feedback = document.getElementById("copy-feedback");
+
+        if (!copyButton || !textarea) {
+            return;
+        }
+
+        const showFeedback = (message, isError = false) => {
+            if (!feedback) {
+                return;
+            }
+            feedback.textContent = message;
+            feedback.classList.toggle("text-success", !isError);
+            feedback.classList.toggle("text-danger", isError);
+            feedback.classList.remove("d-none");
+
+            setTimeout(() => feedback.classList.add("d-none"), 2000);
+        };
+
+        copyButton.addEventListener("click", async () => {
+            try {
+                await navigator.clipboard.writeText(textarea.value);
+                showFeedback("Einträge wurden kopiert.");
+            } catch (error) {
+                showFeedback("Kopieren nicht möglich.", true);
+            }
+        });
+    });
+</script>
 {% endblock %}

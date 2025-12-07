@@ -449,11 +449,22 @@ def project_detail(request, pk):
         ),
         pk=pk,
     )
-    project_publications = project.publications.select_related("journal").prefetch_related(
-        AUTHOR_PREFETCH, "tags"
+    project_publications = list(
+        project.publications.select_related("journal").prefetch_related(
+            AUTHOR_PREFETCH, "tags"
+        )
+    )
+    biblatex_entries = "\n\n".join(
+        publication.biblatex_entry for publication in project_publications
     )
     return render(
-        request, "project_detail.html", {"project": project, "publications": project_publications}
+        request,
+        "project_detail.html",
+        {
+            "project": project,
+            "publications": project_publications,
+            "biblatex_entries": biblatex_entries,
+        },
     )
 
 
