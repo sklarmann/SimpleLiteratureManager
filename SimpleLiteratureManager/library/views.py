@@ -214,7 +214,23 @@ def journal_create(request):
             return redirect("journal_list")
     else:
         form = JournalForm()
-    return render(request, "journal_form.html", {"form": form})
+
+    return render(request, "journal_form.html", {"form": form, "is_edit": False})
+
+
+def journal_update(request, pk):
+    journal = get_object_or_404(Journal, pk=pk)
+    if request.method == "POST":
+        form = JournalForm(request.POST, instance=journal)
+        if form.is_valid():
+            form.save()
+            return redirect("journal_detail", pk=journal.pk)
+    else:
+        form = JournalForm(instance=journal)
+
+    return render(
+        request, "journal_form.html", {"form": form, "is_edit": True, "journal": journal}
+    )
 
 def publication_list(request):
     publications = (

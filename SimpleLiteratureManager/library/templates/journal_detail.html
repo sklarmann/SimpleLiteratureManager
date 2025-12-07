@@ -5,6 +5,7 @@
         <h1 class="mb-0">{{ journal.name }}</h1>
         <p class="mb-0 text-muted">Journaldetails</p>
     </div>
+    <a class="btn btn-primary" href="{% url 'journal_update' journal.id %}">Bearbeiten</a>
 </div>
 
 <div class="card mb-4">
