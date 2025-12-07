@@ -18,6 +18,7 @@ class Author(models.Model):
 
 class Journal(models.Model):
     name = models.CharField(max_length=255)
+    short_name = models.CharField(max_length=100, blank=True, null=True)
     issn = models.CharField(max_length=20, blank=True, null=True)
     publisher = models.CharField(max_length=255, blank=True, null=True)
 

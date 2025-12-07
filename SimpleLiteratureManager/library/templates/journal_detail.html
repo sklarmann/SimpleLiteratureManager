@@ -13,6 +13,9 @@
             <dt class="col-sm-3">ISSN</dt>
             <dd class="col-sm-9">{{ journal.issn|default_if_none:"-" }}</dd>
 
+            <dt class="col-sm-3">Kurzname</dt>
+            <dd class="col-sm-9">{{ journal.short_name|default_if_none:"-" }}</dd>
+
             <dt class="col-sm-3">Verlag</dt>
             <dd class="col-sm-9">{{ journal.publisher|default_if_none:"-" }}</dd>
         </dl>

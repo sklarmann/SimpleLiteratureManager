@@ -10,6 +10,7 @@
         <thead>
             <tr>
                 <th scope="col" data-sort="text">Name</th>
+                <th scope="col" data-sort="text">Kurzname</th>
                 <th scope="col" data-sort="text">ISSN</th>
                 <th scope="col" data-sort="text">Verlag</th>
             </tr>
@@ -18,6 +19,7 @@
             {% for j in journals %}
             <tr>
                 <td><a href="{% url 'journal_detail' j.id %}">{{ j.name }}</a></td>
+                <td>{{ j.short_name|default_if_none:"" }}</td>
                 <td>{{ j.issn|default_if_none:"" }}</td>
                 <td>{{ j.publisher|default_if_none:"" }}</td>
             </tr>
