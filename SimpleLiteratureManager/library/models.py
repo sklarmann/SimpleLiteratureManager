@@ -143,6 +143,35 @@ class Publication(models.Model):
         )
         return authors
 
+    def _abbreviate_first_name(self, first_name):
+        import re
+
+        tokens = re.split(r"([\s-])", (first_name or "").strip())
+        abbreviated = []
+        for token in tokens:
+            if not token:
+                continue
+            if token in {" ", "-"}:
+                abbreviated.append(token)
+            else:
+                abbreviated.append(f"{token[0]}.")
+        return "".join(abbreviated)
+
+    def _format_authors(self, short_first_names=False):
+        authors = list(self.ordered_authors)
+        if not authors:
+            return ""
+
+        formatted_authors = []
+        for author in authors:
+            first_name = (
+                self._abbreviate_first_name(author.first_name)
+                if short_first_names
+                else author.first_name
+            )
+            formatted_authors.append(f"{author.last_name}, {first_name}")
+        return " and ".join(formatted_authors)
+
     @property
     def biblatex_entry(self):
         entry_type_map = {
@@ -154,11 +183,52 @@ class Publication(models.Model):
 
         fields = []
 
-        authors = list(self.ordered_authors)
-        if authors:
-            formatted_authors = " and ".join(
-                f"{author.last_name}, {author.first_name}" for author in authors
-            )
+        formatted_authors = self._format_authors()
+        if formatted_authors:
+            fields.append(("author", formatted_authors))
+
+        fields.append(("title", self.title))
+
+        if self.year:
+            fields.append(("year", str(self.year)))
+
+        if self.journal:
+            if entry_type == "article":
+                fields.append(("journaltitle", self.journal.name))
+            else:
+                fields.append(("booktitle", self.journal.name))
+
+        if self.volume:
+            fields.append(("volume", self.volume))
+
+        if self.pages:
+            fields.append(("pages", self.pages))
+
+        if self.doi:
+            fields.append(("doi", self.doi))
+            if not self.doi.lower().startswith("http"):
+                fields.append(("url", f"https://doi.org/{self.doi}"))
+            else:
+                fields.append(("url", self.doi))
+
+        field_lines = ",\n".join(
+            f"    {name} = {{{value}}}" for name, value in fields if value
+        )
+        return f"@{entry_type}{{{self.bibtex_key},\n{field_lines}\n}}"
+
+    @property
+    def biblatex_entry_short(self):
+        entry_type_map = {
+            self.PublicationType.ARTICLE: "article",
+            self.PublicationType.PROCEEDINGS: "inproceedings",
+            self.PublicationType.BOOK: "book",
+        }
+        entry_type = entry_type_map.get(self.publication_type, "article")
+
+        fields = []
+
+        formatted_authors = self._format_authors(short_first_names=True)
+        if formatted_authors:
             fields.append(("author", formatted_authors))
 
         fields.append(("title", self.title))
