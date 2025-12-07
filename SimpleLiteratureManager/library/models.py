@@ -143,6 +143,53 @@ class Publication(models.Model):
         )
         return authors
 
+    @property
+    def biblatex_entry(self):
+        entry_type_map = {
+            self.PublicationType.ARTICLE: "article",
+            self.PublicationType.PROCEEDINGS: "inproceedings",
+            self.PublicationType.BOOK: "book",
+        }
+        entry_type = entry_type_map.get(self.publication_type, "article")
+
+        fields = []
+
+        authors = list(self.ordered_authors)
+        if authors:
+            formatted_authors = " and ".join(
+                f"{author.last_name}, {author.first_name}" for author in authors
+            )
+            fields.append(("author", formatted_authors))
+
+        fields.append(("title", self.title))
+
+        if self.year:
+            fields.append(("year", str(self.year)))
+
+        if self.journal:
+            if entry_type == "article":
+                fields.append(("journaltitle", self.journal.name))
+            else:
+                fields.append(("booktitle", self.journal.name))
+
+        if self.volume:
+            fields.append(("volume", self.volume))
+
+        if self.pages:
+            fields.append(("pages", self.pages))
+
+        if self.doi:
+            fields.append(("doi", self.doi))
+            if not self.doi.lower().startswith("http"):
+                fields.append(("url", f"https://doi.org/{self.doi}"))
+            else:
+                fields.append(("url", self.doi))
+
+        field_lines = ",\n".join(
+            f"    {name} = {{{value}}}" for name, value in fields if value
+        )
+        return f"@{entry_type}{{{self.bibtex_key},\n{field_lines}\n}}"
+
 
 class PublicationAuthor(models.Model):
     publication = models.ForeignKey(

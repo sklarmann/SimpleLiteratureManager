@@ -74,6 +74,18 @@
     </div>
 </div>
 
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>BibLaTeX</span>
+        <button class="btn btn-outline-secondary btn-sm" id="copy-biblatex">In Zwischenablage kopieren</button>
+    </div>
+    <div class="card-body">
+        <label class="form-label fw-semibold" for="biblatex-entry">Eintrag</label>
+        <textarea id="biblatex-entry" class="form-control font-monospace" rows="8" readonly>{{ publication.biblatex_entry }}</textarea>
+        <div id="copy-feedback" class="text-success small mt-2 d-none">Eintrag wurde kopiert.</div>
+    </div>
+</div>
+
 {% if publication.pdf %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css" integrity="sha512-1fs/Hggsu2HrksBmbteKrYnb70SP3yjHfxcfTl1Pq1w3+sxCH/xUCFMJL8NfgKkLDGLcZ3uimJ5UJxdXXZSpzg==" crossorigin="anonymous" referrerpolicy="no-referrer">
 <div class="card mb-4">
@@ -116,6 +128,39 @@
 {% endif %}
 
 <a class="btn btn-secondary" href="{% url 'publication_list' %}">Zurück zur Liste</a>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const copyButton = document.getElementById("copy-biblatex");
+        const textarea = document.getElementById("biblatex-entry");
+        const feedback = document.getElementById("copy-feedback");
+
+        if (!copyButton || !textarea) {
+            return;
+        }
+
+        const showFeedback = (message, isError = false) => {
+            if (!feedback) {
+                return;
+            }
+            feedback.textContent = message;
+            feedback.classList.toggle("text-success", !isError);
+            feedback.classList.toggle("text-danger", isError);
+            feedback.classList.remove("d-none");
+
+            setTimeout(() => feedback.classList.add("d-none"), 2000);
+        };
+
+        copyButton.addEventListener("click", async () => {
+            try {
+                await navigator.clipboard.writeText(textarea.value);
+                showFeedback("Eintrag wurde kopiert.");
+            } catch (error) {
+                showFeedback("Kopieren nicht möglich.", true);
+            }
+        });
+    });
+</script>
 
 {% if publication.pdf %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" integrity="sha512-q+4liFwdPC/bNdhUpZx6aXDx/h77yEQtn4I1slHydcbZK34nLaR3cAeYSJshoxIOq3mjEf7xJE8YWIUHMn+oCQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
