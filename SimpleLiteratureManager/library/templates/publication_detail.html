@@ -19,7 +19,13 @@
             <dd class="col-sm-9">{{ publication.get_publication_type_display }}</dd>
 
             <dt class="col-sm-3">Journal</dt>
-            <dd class="col-sm-9">{{ publication.journal|default_if_none:"-" }}</dd>
+            <dd class="col-sm-9">
+                {% if publication.journal %}
+                    <a href="{% url 'journal_detail' publication.journal.id %}">{{ publication.journal.name }}</a>
+                {% else %}
+                    -
+                {% endif %}
+            </dd>
 
             <dt class="col-sm-3">Volume</dt>
             <dd class="col-sm-9">{{ publication.volume|default_if_none:"-" }}</dd>
@@ -30,7 +36,9 @@
             <dt class="col-sm-3">Autoren</dt>
             <dd class="col-sm-9">
                 {% if publication.ordered_authors %}
-                    {{ publication.ordered_authors|join:", " }}
+                    {% for author in publication.ordered_authors %}
+                        <a href="{% url 'author_detail' author.id %}">{{ author }}</a>{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
                 {% else %}
                     -
                 {% endif %}
