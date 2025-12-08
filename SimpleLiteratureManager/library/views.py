@@ -476,6 +476,13 @@ def project_detail(request, pk):
     biblatex_entries_short = "\n\n".join(
         publication.biblatex_entry_short for publication in project_publications
     )
+    biblatex_entries_short_journal = "\n\n".join(
+        publication.biblatex_entry_short_journal
+        for publication in project_publications
+    )
+    biblatex_entries_short_all = "\n\n".join(
+        publication.biblatex_entry_short_all for publication in project_publications
+    )
     return render(
         request,
         "project_detail.html",
@@ -484,6 +491,8 @@ def project_detail(request, pk):
             "publications": project_publications,
             "biblatex_entries": biblatex_entries,
             "biblatex_entries_short": biblatex_entries_short,
+            "biblatex_entries_short_journal": biblatex_entries_short_journal,
+            "biblatex_entries_short_all": biblatex_entries_short_all,
         },
     )
 

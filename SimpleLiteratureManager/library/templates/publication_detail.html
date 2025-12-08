@@ -78,6 +78,12 @@
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span>BibLaTeX</span>
         <div class="d-flex align-items-center gap-2">
+            <button
+                class="btn btn-outline-secondary btn-sm"
+                id="toggle-journal-names"
+                type="button"
+                aria-pressed="false"
+            >Journal-Kurznamen nutzen</button>
             <div class="form-check form-switch mb-0">
                 <input class="form-check-input" type="checkbox" role="switch" id="toggle-short-names">
                 <label class="form-check-label" for="toggle-short-names">Vornamen abkürzen</label>
@@ -92,8 +98,10 @@
             class="form-control font-monospace"
             rows="8"
             readonly
-            data-long-entry="{{ publication.biblatex_entry }}"
-            data-short-entry="{{ publication.biblatex_entry_short }}"
+            data-author-long-journal-long="{{ publication.biblatex_entry }}"
+            data-author-short-journal-long="{{ publication.biblatex_entry_short }}"
+            data-author-long-journal-short="{{ publication.biblatex_entry_short_journal }}"
+            data-author-short-journal-short="{{ publication.biblatex_entry_short_all }}"
         >{{ publication.biblatex_entry }}</textarea>
         <div id="copy-feedback" class="text-success small mt-2 d-none">Eintrag wurde kopiert.</div>
     </div>
@@ -148,6 +156,8 @@
         const textarea = document.getElementById("biblatex-entry");
         const feedback = document.getElementById("copy-feedback");
         const toggleShortNames = document.getElementById("toggle-short-names");
+        const toggleJournalNames = document.getElementById("toggle-journal-names");
+        let useShortJournalNames = false;
 
         if (!copyButton || !textarea) {
             return;
@@ -166,17 +176,47 @@
         };
 
         const updateEntry = () => {
-            if (!textarea || !toggleShortNames) {
+            if (!textarea) {
                 return;
             }
-            const targetValue = toggleShortNames.checked
-                ? textarea.dataset.shortEntry
-                : textarea.dataset.longEntry;
+            const useShortAuthors = toggleShortNames?.checked ?? false;
+            const datasetKey = (() => {
+                if (useShortAuthors && useShortJournalNames) {
+                    return "authorShortJournalShort";
+                }
+                if (useShortAuthors) {
+                    return "authorShortJournalLong";
+                }
+                if (useShortJournalNames) {
+                    return "authorLongJournalShort";
+                }
+                return "authorLongJournalLong";
+            })();
+            const targetValue = textarea.dataset[datasetKey];
             textarea.value = targetValue || "";
         };
 
         if (toggleShortNames) {
             toggleShortNames.addEventListener("change", updateEntry);
+        }
+
+        const updateJournalButton = () => {
+            if (!toggleJournalNames) {
+                return;
+            }
+            toggleJournalNames.textContent = useShortJournalNames
+                ? "Journal-Namen anzeigen"
+                : "Journal-Kurznamen nutzen";
+            toggleJournalNames.setAttribute("aria-pressed", useShortJournalNames.toString());
+        };
+
+        if (toggleJournalNames) {
+            toggleJournalNames.addEventListener("click", () => {
+                useShortJournalNames = !useShortJournalNames;
+                updateJournalButton();
+                updateEntry();
+            });
+            updateJournalButton();
         }
 
         copyButton.addEventListener("click", async () => {
