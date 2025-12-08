@@ -10,7 +10,7 @@ class AuthorForm(forms.ModelForm):
 class JournalForm(forms.ModelForm):
     class Meta:
         model = Journal
-        fields = ["name", "issn", "publisher"]
+        fields = ["name", "short_name", "issn", "publisher"]
 
 
 class TagForm(forms.ModelForm):

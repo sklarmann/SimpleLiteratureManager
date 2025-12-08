@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h1>Journal hinzufügen</h1>
+<h1>{% if is_edit %}Journal bearbeiten{% else %}Journal hinzufügen{% endif %}</h1>
 
 <form method="POST" class="mt-3">
     {% csrf_token %}
@@ -9,6 +9,11 @@
     <div class="mb-3">
         {{ form.name.label_tag }}
         {{ form.name }}
+    </div>
+
+    <div class="mb-3">
+        {{ form.short_name.label_tag }}
+        {{ form.short_name }}
     </div>
 
     <div class="mb-3">
@@ -21,8 +26,12 @@
         {{ form.publisher }}
     </div>
 
-    <button class="btn btn-primary" type="submit">Speichern</button>
-    <a class="btn btn-secondary" href="/journals/">Abbrechen</a>
+    <button class="btn btn-primary" type="submit">{% if is_edit %}Aktualisieren{% else %}Speichern{% endif %}</button>
+    {% if is_edit %}
+        <a class="btn btn-secondary" href="{% url 'journal_detail' journal.id %}">Abbrechen</a>
+    {% else %}
+        <a class="btn btn-secondary" href="{% url 'journal_list' %}">Abbrechen</a>
+    {% endif %}
 </form>
 
 {% endblock %}

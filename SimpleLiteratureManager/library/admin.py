@@ -10,8 +10,8 @@ class AuthorAdmin(admin.ModelAdmin):
 
 @admin.register(Journal)
 class JournalAdmin(admin.ModelAdmin):
-    list_display = ("name", "issn", "publisher")
-    search_fields = ("name", "issn")
+    list_display = ("name", "short_name", "issn", "publisher")
+    search_fields = ("name", "short_name", "issn")
 
 
 @admin.register(Publication)

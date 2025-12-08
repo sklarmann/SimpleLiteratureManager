@@ -16,6 +16,7 @@ urlpatterns = [
     path("journals/", views.journal_list, name="journal_list"),
     path("journals/add/", views.journal_create, name="journal_create"),
     path("journals/<int:pk>/", views.journal_detail, name="journal_detail"),
+    path("journals/<int:pk>/edit/", views.journal_update, name="journal_update"),
     path("tags/", views.tag_list, name="tag_list"),
     path("tags/add/", views.tag_create, name="tag_create"),
     path("tags/<int:pk>/", views.tag_detail, name="tag_detail"),

@@ -18,6 +18,7 @@ class Author(models.Model):
 
 class Journal(models.Model):
     name = models.CharField(max_length=255)
+    short_name = models.CharField(max_length=100, blank=True, null=True)
     issn = models.CharField(max_length=20, blank=True, null=True)
     publisher = models.CharField(max_length=255, blank=True, null=True)
 
@@ -142,6 +143,108 @@ class Publication(models.Model):
             ]
         )
         return authors
+
+    def _abbreviate_first_name(self, first_name):
+        import re
+
+        tokens = re.split(r"([\s-])", (first_name or "").strip())
+        abbreviated = []
+        for token in tokens:
+            if not token:
+                continue
+            if token in {" ", "-"}:
+                abbreviated.append(token)
+            else:
+                abbreviated.append(f"{token[0]}.")
+        return "".join(abbreviated)
+
+    def _format_authors(self, short_first_names=False):
+        authors = list(self.ordered_authors)
+        if not authors:
+            return ""
+
+        formatted_authors = []
+        for author in authors:
+            first_name = (
+                self._abbreviate_first_name(author.first_name)
+                if short_first_names
+                else author.first_name
+            )
+            formatted_authors.append(f"{author.last_name}, {first_name}")
+        return " and ".join(formatted_authors)
+
+    def _get_journal_title(self, use_short_name=False):
+        if not self.journal:
+            return ""
+
+        if use_short_name and self.journal.short_name:
+            return self.journal.short_name
+
+        return self.journal.name
+
+    def _build_biblatex_entry(
+        self, *, short_first_names=False, use_short_journal=False
+    ):
+        entry_type_map = {
+            self.PublicationType.ARTICLE: "article",
+            self.PublicationType.PROCEEDINGS: "inproceedings",
+            self.PublicationType.BOOK: "book",
+        }
+        entry_type = entry_type_map.get(self.publication_type, "article")
+
+        fields = []
+
+        formatted_authors = self._format_authors(short_first_names=short_first_names)
+        if formatted_authors:
+            fields.append(("author", formatted_authors))
+
+        fields.append(("title", self.title))
+
+        if self.year:
+            fields.append(("year", str(self.year)))
+
+        journal_title = self._get_journal_title(use_short_name=use_short_journal)
+        if journal_title:
+            if entry_type == "article":
+                fields.append(("journaltitle", journal_title))
+            else:
+                fields.append(("booktitle", journal_title))
+
+        if self.volume:
+            fields.append(("volume", self.volume))
+
+        if self.pages:
+            fields.append(("pages", self.pages))
+
+        if self.doi:
+            fields.append(("doi", self.doi))
+            if not self.doi.lower().startswith("http"):
+                fields.append(("url", f"https://doi.org/{self.doi}"))
+            else:
+                fields.append(("url", self.doi))
+
+        field_lines = ",\n".join(
+            f"    {name} = {{{value}}}" for name, value in fields if value
+        )
+        return f"@{entry_type}{{{self.bibtex_key},\n{field_lines}\n}}"
+
+    @property
+    def biblatex_entry(self):
+        return self._build_biblatex_entry()
+
+    @property
+    def biblatex_entry_short(self):
+        return self._build_biblatex_entry(short_first_names=True)
+
+    @property
+    def biblatex_entry_short_journal(self):
+        return self._build_biblatex_entry(use_short_journal=True)
+
+    @property
+    def biblatex_entry_short_names_short_journal(self):
+        return self._build_biblatex_entry(
+            short_first_names=True, use_short_journal=True
+        )
 
 
 class PublicationAuthor(models.Model):

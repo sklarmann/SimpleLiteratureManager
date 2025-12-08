@@ -214,7 +214,23 @@ def journal_create(request):
             return redirect("journal_list")
     else:
         form = JournalForm()
-    return render(request, "journal_form.html", {"form": form})
+
+    return render(request, "journal_form.html", {"form": form, "is_edit": False})
+
+
+def journal_update(request, pk):
+    journal = get_object_or_404(Journal, pk=pk)
+    if request.method == "POST":
+        form = JournalForm(request.POST, instance=journal)
+        if form.is_valid():
+            form.save()
+            return redirect("journal_detail", pk=journal.pk)
+    else:
+        form = JournalForm(instance=journal)
+
+    return render(
+        request, "journal_form.html", {"form": form, "is_edit": True, "journal": journal}
+    )
 
 def publication_list(request):
     publications = (
@@ -449,11 +465,36 @@ def project_detail(request, pk):
         ),
         pk=pk,
     )
-    project_publications = project.publications.select_related("journal").prefetch_related(
-        AUTHOR_PREFETCH, "tags"
+    project_publications = list(
+        project.publications.select_related("journal").prefetch_related(
+            AUTHOR_PREFETCH, "tags"
+        )
+    )
+    biblatex_entries = "\n\n".join(
+        publication.biblatex_entry for publication in project_publications
+    )
+    biblatex_entries_short = "\n\n".join(
+        publication.biblatex_entry_short for publication in project_publications
+    )
+    biblatex_entries_short_journal = "\n\n".join(
+        publication.biblatex_entry_short_journal
+        for publication in project_publications
+    )
+    biblatex_entries_short_names_short_journal = "\n\n".join(
+        publication.biblatex_entry_short_names_short_journal
+        for publication in project_publications
     )
     return render(
-        request, "project_detail.html", {"project": project, "publications": project_publications}
+        request,
+        "project_detail.html",
+        {
+            "project": project,
+            "publications": project_publications,
+            "biblatex_entries": biblatex_entries,
+            "biblatex_entries_short": biblatex_entries_short,
+            "biblatex_entries_short_journal": biblatex_entries_short_journal,
+            "biblatex_entries_short_names_short_journal": biblatex_entries_short_names_short_journal,
+        },
     )
 
 

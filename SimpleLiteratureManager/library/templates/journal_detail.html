@@ -5,6 +5,7 @@
         <h1 class="mb-0">{{ journal.name }}</h1>
         <p class="mb-0 text-muted">Journaldetails</p>
     </div>
+    <a class="btn btn-primary" href="{% url 'journal_update' journal.id %}">Bearbeiten</a>
 </div>
 
 <div class="card mb-4">
@@ -12,6 +13,9 @@
         <dl class="row mb-0">
             <dt class="col-sm-3">ISSN</dt>
             <dd class="col-sm-9">{{ journal.issn|default_if_none:"-" }}</dd>
+
+            <dt class="col-sm-3">Kurzname</dt>
+            <dd class="col-sm-9">{{ journal.short_name|default_if_none:"-" }}</dd>
 
             <dt class="col-sm-3">Verlag</dt>
             <dd class="col-sm-9">{{ journal.publisher|default_if_none:"-" }}</dd>
