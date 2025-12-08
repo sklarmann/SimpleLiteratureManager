@@ -13,6 +13,8 @@
             <tr>
                 <th scope="col" data-sort="number">Jahr</th>
                 <th scope="col" data-sort="string">Titel</th>
+                <th scope="col" data-sort="string">Typ</th>
+                <th scope="col" class="text-center" style="width: 3rem;" data-sort="string">PDF</th>
                 <th scope="col" data-sort="string">Autoren</th>
                 <th scope="col" data-sort="string">Tags</th>
                 <th scope="col" data-sort="string">Projekte</th>
@@ -24,6 +26,10 @@
                 <td data-value="{{ p.year|default:'' }}">{{ p.year }}</td>
                 <td>
                     <a href="{% url 'publication_detail' p.id %}">{{ p.title }}</a>
+                </td>
+                <td data-value="{{ p.get_publication_type_display|default:'' }}">{{ p.get_publication_type_display|default:'—' }}</td>
+                <td class="text-center" data-value="{{ p.pdf|yesno:'1,0' }}">
+                    <input class="form-check-input" type="checkbox" disabled {% if p.pdf %}checked{% endif %}>
                 </td>
                 <td data-value="{{ p.ordered_authors|join:', ' }}">
                     {% for author in p.ordered_authors %}
