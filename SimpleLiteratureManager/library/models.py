@@ -103,7 +103,10 @@ class Publication(models.Model):
 
     abstract = models.TextField(blank=True, null=True)
     pdf = models.FileField(
-        upload_to=publication_pdf_upload_to, blank=True, null=True
+        upload_to=publication_pdf_upload_to,
+        max_length=200,
+        blank=True,
+        null=True,
     )
     bibtex_key = models.CharField(max_length=255, unique=True, blank=True, editable=False)
 
