@@ -1,6 +1,33 @@
+import os
+import re
+
 from django.db import models
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
+
+
+def _normalize_filename_component(value, fallback="unknown"):
+    normalized = (value or "").strip().replace(" ", "_")
+    normalized = re.sub(r"[^\w.-]", "", normalized, flags=re.UNICODE)
+    return normalized or fallback
+
+
+def publication_pdf_upload_to(instance, filename):
+    base, extension = os.path.splitext(filename)
+
+    pending_authors = getattr(instance, "_pending_ordered_authors", None) or []
+    first_author = (pending_authors[0] if pending_authors else None) or (
+        instance.ordered_authors.first() if instance.pk else None
+    )
+
+    year_part = _normalize_filename_component(str(instance.year or "unknown"))
+    author_part = _normalize_filename_component(
+        getattr(first_author, "last_name", None), fallback="UnknownAuthor"
+    )
+    title_part = _normalize_filename_component(instance.title, fallback="publication")
+
+    filename = f"{year_part}_{author_part}_{title_part}{extension}"
+    return os.path.join("publications", filename)
 
 class Author(models.Model):
     first_name = models.CharField(max_length=100)
@@ -75,7 +102,9 @@ class Publication(models.Model):
     projects = models.ManyToManyField(Project, related_name="publications", blank=True)
 
     abstract = models.TextField(blank=True, null=True)
-    pdf = models.FileField(upload_to="publications/", blank=True, null=True)
+    pdf = models.FileField(
+        upload_to=publication_pdf_upload_to, blank=True, null=True
+    )
     bibtex_key = models.CharField(max_length=255, unique=True, blank=True, editable=False)
 
     class Meta:

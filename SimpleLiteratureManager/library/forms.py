@@ -106,6 +106,9 @@ class PublicationForm(forms.ModelForm):
 
         ordered_authors = getattr(self, "_cleaned_ordered_authors", None)
 
+        if ordered_authors is not None:
+            publication._pending_ordered_authors = ordered_authors
+
         def save_relations():
             publication.save()
             final_order = ordered_authors or self._ordered_authors_from_cleaned()
