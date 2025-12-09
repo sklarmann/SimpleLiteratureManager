@@ -19,6 +19,7 @@ Simple Literature Manager is a Django application for managing academic publicat
 | --- | --- | --- |
 | Django 5.1.14 | Web framework for models, views, templates, and admin | BSD-3-Clause |
 | requests | HTTP client for retrieving DOI/metadata | Apache License 2.0 |
+| pdf.js | In-browser PDF rendering for publication previews | Apache License 2.0 |
 
 ## License
 This project is licensed under the BSD-3-Clause license (see `LICENSE`).
