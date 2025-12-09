@@ -2,6 +2,8 @@
 
 Simple Literature Manager is a Django application for managing academic publications. It lets you capture authors, journals, projects, and tags; attach PDFs and DOIs; and maintain ordered author lists for each publication.
 
+In its current state, the project is only for local use. There is no user management and no login page so far.
+
 ## Architecture and key features
 - **Tech stack:** Django 5.1 (Python) with SQLite as the default database and classic server-side template rendering.
 - **Publication management:** Track titles, years, DOIs, publication types, volume/page details, and optional PDF uploads with automatic filename generation.
